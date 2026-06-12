@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="cadvm-logo.png" alt="cadvm" width="420">
+</p>
+
 # Introduction
 
 **cadvm** (CAD Version Manager) is a **local-first version control system for

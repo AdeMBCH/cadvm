@@ -1,7 +1,13 @@
-# cadvm — CAD Version Manager
+<p align="center">
+  <img src="assets/cadvm-logo.png" alt="cadvm — CAD Version Manager" width="440">
+</p>
 
-[![CI](https://github.com/AdeMBCH/cadvm/actions/workflows/ci.yml/badge.svg)](https://github.com/AdeMBCH/cadvm/actions/workflows/ci.yml)
-[![Docs](https://img.shields.io/badge/docs-online-blue)](https://adembch.github.io/cadvm/)
+<p align="center">
+  <a href="https://github.com/AdeMBCH/cadvm/actions/workflows/ci.yml"><img src="https://github.com/AdeMBCH/cadvm/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://adembch.github.io/cadvm/"><img src="https://img.shields.io/badge/docs-online-blue" alt="Docs"></a>
+</p>
+
+# cadvm — CAD Version Manager
 
 `cadvm` is a **local-first version manager for STEP/STP CAD files**. It brings
 Git-like workflows — snapshots, branches, diff, checkout, revert — to CAD data,

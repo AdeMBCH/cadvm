@@ -13,23 +13,31 @@ It goes further than text versioning: a **geometric diff** (added / removed /
 common material) via Open CASCADE, a **self-contained 3D viewer**, and an
 **interactive terminal dashboard**.
 
-## Quick install
+## Installation
+
+cadvm installs in two layers. The first is all most users need.
+
+**1. The `cadvm` binary** (version control + TUI) — pure Rust, runs on Linux,
+macOS and Windows. Needs a recent stable Rust toolchain:
 
 ```bash
-# 1. The cadvm binary (VCS + TUI) — pure Rust, all platforms:
-cargo install --path crates/cadvm-cli
+cargo install --path crates/cadvm-cli      # installs `cadvm` into ~/.cargo/bin
+```
 
-# 2. (optional) Geometry features (`geom-diff`, `view`) need Open CASCADE.
-#    You install OCCT yourself; cadvm does not bundle it. On Ubuntu/Debian:
+**2. Geometry features** (`cadvm geom-diff`, `cadvm view`) additionally need
+**[Open CASCADE](https://dev.opencascade.org/)** — a prerequisite **you install
+yourself**; cadvm does not bundle it. On Ubuntu/Debian:
+
+```bash
 sudo apt-get install -y libocct-foundation-dev libocct-modeling-data-dev \
     libocct-modeling-algorithms-dev libocct-data-exchange-dev cmake g++
-cpp/build.sh
+cpp/build.sh                                # builds the cadvm-geom helper
 export CADVM_GEOM_BIN="$PWD/cpp/cadvm-geom/build/cadvm-geom"
 ```
 
-The VCS and TUI work with step 1 alone. **Open CASCADE is a user-provided
-prerequisite** for the geometry features — see [Installation](docs/src/installation.md)
-for macOS/Windows. Full docs in [`docs/`](docs/).
+The version control and TUI work **without** Open CASCADE; only the geometry
+features require it. For macOS/Windows OCCT setup, shell completions and more,
+see the **[documentation](https://adembch.github.io/cadvm/)**.
 
 ## Features
 
@@ -62,22 +70,8 @@ A Cargo workspace with three crates:
   selected* — or *parent → selected* if no anchor is set;
 - **`b`** switch branch, **`s`** status, **`?`** help, **`q`** quit.
 
-Geometry actions (`g`, `v`) need the `cadvm-geom` helper (see below).
-
-## Installation
-
-```bash
-# Build everything
-cargo build --release
-
-# The binary is at target/release/cadvm
-./target/release/cadvm --help
-
-# Or install into ~/.cargo/bin
-cargo install --path crates/cadvm-cli
-```
-
-Requires a recent stable Rust toolchain (tested on 1.96).
+Geometry actions (`g`, `v`) need the `cadvm-geom` helper (see
+[Installation](#installation)).
 
 ## Commands
 
@@ -162,17 +156,8 @@ It also reports a **topological face-to-face diff**: faces of A and B are matche
 by a coarse geometric signature (surface type + rounded area + centre of mass),
 yielding counts of *common / added / removed* faces alongside the volumes.
 
-**Build it** (Ubuntu/Debian):
-
-```bash
-sudo apt-get install -y libocct-foundation-dev libocct-modeling-data-dev \
-    libocct-modeling-algorithms-dev libocct-data-exchange-dev cmake g++
-
-cpp/build.sh
-export CADVM_GEOM_BIN="$PWD/cpp/cadvm-geom/build/cadvm-geom"
-```
-
-**Use it:**
+It needs the `cadvm-geom` helper and Open CASCADE — see
+[Installation](#installation) to build it. Then:
 
 ```bash
 cadvm geom-diff HEAD~1 HEAD          # all modified STEP files

@@ -1,12 +1,13 @@
 # Installation
 
-cadvm has two parts that install separately:
+cadvm installs in two layers. The first is all most users need.
 
-1. the **`cadvm` binary** (VCS + TUI) — pure Rust, works everywhere;
-2. the optional **`cadvm-geom` helper** (geometric diff + viewer) — needs Open
-   CASCADE.
+1. the **`cadvm` binary** (version control + TUI) — pure Rust, works everywhere;
+2. the **`cadvm-geom` helper** (geometric diff + viewer) — requires **Open
+   CASCADE**, a prerequisite you install yourself (cadvm does not bundle it).
 
-You only need part 2 if you want `cadvm geom-diff` and `cadvm view`.
+You only need part 2 for `cadvm geom-diff` and `cadvm view`; everything else
+works without Open CASCADE.
 
 ## 1. The `cadvm` binary
 
@@ -26,7 +27,7 @@ cadvm --help
 
 To update later, re-run the same command with `--force`.
 
-## 2. The geometry helper (optional)
+## 2. Geometry features (Open CASCADE prerequisite)
 
 ### Install Open CASCADE
 

@@ -1,0 +1,19 @@
+[package]
+name = "cadvm-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Repository logic for cadvm: commits, manifests, refs, branches, status, diff, checkout."
+
+[dependencies]
+cadvm-store.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+walkdir.workspace = true
+chrono.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

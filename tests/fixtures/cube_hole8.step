@@ -1,0 +1,15 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION(('Cube with an 8mm hole'),'2;1');
+FILE_NAME('cube_hole8.step','2026-06-12T00:00:00',('cadvm'),('cadvm'),'','','');
+FILE_SCHEMA(('AUTOMOTIVE_DESIGN'));
+ENDSEC;
+DATA;
+#1 = CARTESIAN_POINT('', (0.0, 0.0, 0.0));
+#2 = DIRECTION('', (0.0, 0.0, 1.0));
+#3 = CARTESIAN_POINT('', (1.0, 0.0, 0.0));
+#4 = CIRCLE('', #1, 4.0);
+#5 = CYLINDRICAL_SURFACE('', #1, 4.0);
+#6 = CARTESIAN_POINT('', (2.0, 2.0, 0.0));
+ENDSEC;
+END-ISO-10303-21;

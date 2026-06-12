@@ -1,0 +1,20 @@
+[book]
+title = "cadvm — CAD Version Manager"
+authors = ["cadvm contributors"]
+description = "Local-first version control for STEP/STP CAD files, with geometric diff and a 3D viewer."
+language = "en"
+src = "src"
+
+[output.html]
+default-theme = "navy"
+preferred-dark-theme = "navy"
+smart-punctuation = true
+git-repository-url = "https://github.com/AdeMBCH/cadvm"
+edit-url-template = "https://github.com/AdeMBCH/cadvm/edit/main/docs/{path}"
+
+[output.html.fold]
+enable = true
+level = 1
+
+[output.html.search]
+enable = true

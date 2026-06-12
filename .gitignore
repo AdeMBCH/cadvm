@@ -1,0 +1,17 @@
+/target
+**/*.rs.bk
+
+# Local tooling / editor state (not part of the project)
+/.claude/
+/.vscode/
+
+# C++ helper build output
+/cpp/cadvm-geom/build/
+
+# Generated 3D viewer HTML
+cadvm-view*.html
+
+# mdBook build output
+/docs/book/
+
+# Cargo.lock is intentionally committed: cadvm ships a binary (cadvm-cli).

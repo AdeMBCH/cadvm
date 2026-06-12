@@ -9,7 +9,7 @@ members = [
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
-license = "MIT OR Apache-2.0"
+license = "LicenseRef-Prosperity-3.0.0"
 authors = ["cadvm contributors"]
 repository = "https://github.com/AdeMBCH/cadvm"
 

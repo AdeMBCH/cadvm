@@ -5,6 +5,8 @@
 <p align="center">
   <a href="https://github.com/AdeMBCH/cadvm/actions/workflows/ci.yml"><img src="https://github.com/AdeMBCH/cadvm/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://adembch.github.io/cadvm/"><img src="https://img.shields.io/badge/docs-online-blue" alt="Docs"></a>
+  <a href="https://adembch.github.io/cadvm/api/cadvm_core/index.html"><img src="https://img.shields.io/badge/api-rustdoc-blue" alt="API"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Prosperity%203.0-orange" alt="License"></a>
 </p>
 
 # cadvm — CAD Version Manager
@@ -322,3 +324,16 @@ Test fixtures live in [`tests/fixtures/`](tests/fixtures/).
 - Exact topological face correspondence (not just volumetric / heuristic).
 - A staging index and richer merge tooling.
 - Prebuilt binaries and multi-OS continuous integration.
+
+## Contributing
+
+Issues and PRs welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) and the
+[Developing guide](https://adembch.github.io/cadvm/developing.html).
+
+## License
+
+Released under the **Prosperity Public License 3.0.0** (see [`LICENSE`](LICENSE)):
+free for **noncommercial** use, with a 30-day commercial trial. You may reuse and
+modify cadvm as a base for noncommercial work; **reselling** it (or a derivative)
+as a commercial product requires a commercial license. For commercial use beyond
+the trial, contact the maintainer.

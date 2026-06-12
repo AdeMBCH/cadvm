@@ -43,6 +43,10 @@ Add `--document-private-items` to include internal items. The build is warning
 This is the **developer/API** doc. The **user guide** is this mdBook (below) —
 keep the two distinct: rustdoc explains the code, the book explains the tool.
 
+> 📚 The API reference is published online alongside this guide:
+> **<https://adembch.github.io/cadvm/api/cadvm_core/index.html>** (rebuilt on
+> every push by the Docs workflow).
+
 ## User guide (this book)
 
 ```bash

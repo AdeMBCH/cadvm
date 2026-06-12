@@ -1,14 +1,11 @@
 name: Docs
 
-# Build the mdBook user guide and publish it to GitHub Pages.
-# Pages is free for public repositories; the ubuntu runner (1x multiplier) keeps
-# this well within the free Actions quota.
+# Build the mdBook user guide AND the rustdoc API reference, then publish both to
+# GitHub Pages. Pages is free for public repositories; the ubuntu runner (1x
+# multiplier) keeps this within the free Actions quota.
 on:
   push:
     branches: [main]
-    paths:
-      - "docs/**"
-      - ".github/workflows/docs.yml"
   workflow_dispatch:
 
 permissions:
@@ -26,6 +23,12 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo build
+        uses: Swatinem/rust-cache@v2
+
       - name: Install mdBook
         run: |
           version=v0.5.3
@@ -34,8 +37,17 @@ jobs:
           curl -sSL "$url" | tar -xz -C "$HOME/bin"
           echo "$HOME/bin" >> "$GITHUB_PATH"
 
-      - name: Build the book
+      - name: Build the user guide
         run: mdbook build docs
+
+      - name: Build the API reference (rustdoc)
+        run: cargo doc --no-deps --workspace
+
+      - name: Bundle the API reference into the site (/api)
+        run: |
+          rm -rf docs/book/api
+          cp -r target/doc docs/book/api
+          printf '<!doctype html><meta http-equiv="refresh" content="0; url=cadvm_core/index.html">\n' > docs/book/api/index.html
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

@@ -56,4 +56,7 @@ VCS works without it; only `geom-diff` and `view` need it.
 - `cadvm-cli` — the `cadvm` binary (CLI + TUI).
 - `cpp/cadvm-geom` — the C++/OCCT geometry helper.
 
+The **[API reference (rustdoc)](api/cadvm_core/index.html)** documents these
+crates.
+
 Continue with [Installation](installation.md).

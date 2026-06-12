@@ -26,4 +26,3 @@
 
 - [Developing](developing.md)
 - [License](license.md)
-- [API reference (rustdoc)](https://adembch.github.io/cadvm/api/cadvm_core/index.html)

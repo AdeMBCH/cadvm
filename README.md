@@ -26,14 +26,14 @@ The VCS and TUI work with step 1 alone. **Open CASCADE is a user-provided
 prerequisite** for the geometry features — see [Installation](docs/src/installation.md)
 for macOS/Windows. Full docs in [`docs/`](docs/).
 
-## Project status
+## Features
 
-- ✅ 100% Rust, no FFI, no external services.
-- ✅ Full snapshot / status / log / diff / branch / switch / checkout / revert / gc.
-- ✅ Content-addressed storage (BLAKE3) with two-level deduplication.
-- ✅ Lightweight STEP metadata extraction (schema, entity counts, top types).
-- 🧩 Geometric diff via a C++/OCCT subprocess helper (`cadvm geom-diff`).
-- 🎨 Self-contained 3D WebGL viewer of the diff (`cadvm view`).
+- Snapshots, history, branches, switch, revert, checkout and gc for STEP/STP files.
+- Content-addressed, deduplicated storage (BLAKE3 + 256 KiB chunks).
+- Lightweight STEP metadata (schema, entity counts, top entity types).
+- Geometric diff — added / removed / common volumes and a face-to-face diff (Open CASCADE).
+- A self-contained 3D WebGL viewer of the diff (`cadvm view`).
+- An interactive terminal dashboard (`cadvm ui`) and shell completions.
 
 ## Architecture
 
@@ -98,7 +98,7 @@ Requires a recent stable Rust toolchain (tested on 1.96).
 | `cadvm geom-diff <rev_a> <rev_b>` | Geometric diff of modified STEP files (needs `cadvm-geom`). |
 | `cadvm view <rev_a> <rev_b>`   | Generate a standalone 3D HTML viewer of the diff (needs `cadvm-geom`). |
 
-Tracked formats in V1: **`.step`** and **`.stp`** only. Hidden directories and
+Tracked formats: **`.step`** and **`.stp`** only. Hidden directories and
 the `.cadvm/` directory are skipped during scanning, as are paths matching
 `.cadvmignore` (see below).
 
@@ -142,7 +142,7 @@ Resolution order when stamping a commit is **environment → config → fallback
 The author is shown by `cadvm log` and `cadvm show`. Legacy commits written
 before authors existed read back fine (their author is simply absent).
 
-### Geometric diff (Step 2, C++/OCCT)
+### Geometric diff (C++/OCCT)
 
 The metadata diff above never inspects geometry. Real CAD diffing lives in
 `cpp/cadvm-geom`, a **standalone C++/Open CASCADE executable** the Rust core runs
@@ -179,7 +179,7 @@ runs the helper, and prints the volume deltas. The Rust workspace builds and
 tests **without** OCCT; only `geom-diff`/`view` need the helper at runtime (they
 print a clear hint if `cadvm-geom` is not found).
 
-### 3D viewer (Step 3)
+### 3D viewer
 
 `cadvm view` turns the geometric diff into a **single self-contained HTML file**
 with a hand-written WebGL renderer (no CDN, no server, fully offline). Layers can
@@ -250,8 +250,8 @@ A repository lives in `.cadvm/`:
 ```text
 .cadvm/
 ├── objects/
-│   ├── blobs/        # legacy V1 whole-file blobs (reclaimed by gc)
-│   ├── chunks/       # fixed 256 KiB chunks — the V2 content store
+│   ├── chunks/       # fixed 256 KiB content chunks (file storage)
+│   ├── blobs/        # whole-file blobs (optional; cleaned by gc)
 │   ├── manifests/    # serialized snapshots
 │   └── commits/      # serialized commits
 ├── refs/heads/<branch>   # each file holds the branch's tip commit id
@@ -264,24 +264,19 @@ Objects are addressed by the BLAKE3 hash of their content and sharded by the
 first two hex byte-pairs:
 
 ```text
-.cadvm/objects/blobs/ab/cd/<full-hex>
+.cadvm/objects/chunks/ab/cd/<full-hex>
 ```
 
 ### Deduplication
 
-1. **Content identity (level 1):** `raw_hash` is the BLAKE3 hash of the whole
-   file. Identical files share the same identity, so status/diff comparisons and
-   manifest dedup are exact.
-2. **Fixed-size chunking (level 2):** files are split into 256 KiB chunks, each
-   stored content-addressed, so identical chunks are shared across files and
-   versions.
+1. **Content identity:** each file has a `raw_hash` (BLAKE3 of the whole file).
+   Identical files share the same identity, so status/diff comparisons are exact.
+2. **Fixed-size chunking:** files are split into 256 KiB chunks, each stored
+   content-addressed, so identical chunks are shared across files and versions.
 
-> **Storage note (V2, chunk-only).** File content is stored **only as chunks**;
-> the whole file is *not* written as a standalone blob, so there is no on-disk
-> duplication. `checkout` reconstructs each file by concatenating its chunks.
-> This is backward compatible with the original V1 layout (which also wrote a
-> redundant raw blob): V1 always stored the chunks too, so old repositories read
-> back correctly, and `cadvm gc --prune` reclaims their now-unused raw blobs.
+File content is stored as chunks and `checkout` reconstructs each file by
+concatenating them — there is no on-disk duplication. `cadvm gc --prune` removes
+any unreferenced objects.
 
 ## STEP metadata (textual only)
 
@@ -318,18 +313,15 @@ Test fixtures live in [`tests/fixtures/`](tests/fixtures/).
 
 ## Limits
 
-- Le diff géométrique (Step 2) calcule des **volumes** added/removed/common ; il
-  ne fait pas encore de diff topologique face-à-face ni d'affichage rouge/vert/gris.
-- cadvm ne sait pas encore merger deux modifications du même fichier STEP.
-- `geom-diff` requiert le binaire `cadvm-geom` (OCCT) ; sans lui, le reste de
-  cadvm fonctionne normalement.
+- The geometric diff reports **volumes** (added/removed/common) and a heuristic
+  face-to-face classification; it does not yet do exact topological face
+  correspondence.
+- cadvm cannot merge two concurrent edits of the same STEP file.
+- `geom-diff` and `view` need the `cadvm-geom` helper (Open CASCADE); the rest of
+  cadvm works without it.
 
 ## Roadmap
 
-- **Step 2 (done):** the `cadvm-geom` C++/Open CASCADE helper —
-  *added / removed / common* volumes + metrics, invoked by the Rust core.
-- **Step 3 (done):** `cadvm view` — a self-contained WebGL HTML viewer rendering
-  the diff in green/red/grey, with the full A/B parts as translucent context, plus
-  a heuristic topological face-to-face diff.
-- Later: a staging index, exact topological face correspondence, and richer merge
-  tooling.
+- Exact topological face correspondence (not just volumetric / heuristic).
+- A staging index and richer merge tooling.
+- Prebuilt binaries and multi-OS continuous integration.

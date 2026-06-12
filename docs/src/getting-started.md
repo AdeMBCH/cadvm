@@ -32,7 +32,7 @@ cadvm status          # piece.step shows under "New"
 cadvm snapshot -m "Initial version"
 ```
 
-A *snapshot* captures the whole working tree (there is no staging step in V1).
+A *snapshot* captures the whole working tree (there is no staging step).
 
 ## Make a change and snapshot again
 

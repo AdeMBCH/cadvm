@@ -25,7 +25,7 @@ cadvm revert HEAD
 ```
 
 This creates a **new** commit that restores the state of HEAD's parent (it does
-not rewrite history). V1 supports reverting HEAD only.
+not rewrite history). Reverting HEAD is supported.
 
 ## Restoring files without moving the branch
 
@@ -55,7 +55,7 @@ cadvm gc            # report unreferenced objects (safe, no deletion)
 cadvm gc --prune    # actually delete them
 ```
 
-`gc --prune` also reclaims legacy raw blobs from the old V1 storage scheme (see
+`gc --prune` removes any objects not reachable from a branch (see
 [Storage model](storage.md)).
 
 Next: [Interactive dashboard](tui.md).

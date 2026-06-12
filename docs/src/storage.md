@@ -5,8 +5,8 @@ A repository lives entirely in `.cadvm/`:
 ```text
 .cadvm/
 ├── objects/
-│   ├── blobs/        # legacy V1 whole-file blobs (reclaimed by gc)
-│   ├── chunks/       # fixed 256 KiB chunks — the V2 content store
+│   ├── chunks/       # fixed 256 KiB content chunks (file storage)
+│   ├── blobs/        # whole-file blobs (optional; cleaned by gc)
 │   ├── manifests/    # serialized snapshots
 │   └── commits/      # serialized commits
 ├── refs/heads/<branch>   # each file holds the branch's tip commit id
@@ -35,15 +35,12 @@ object. Writing identical content twice is automatically deduplicated.
 2. **Fixed-size chunking** — files are split into 256 KiB chunks, each stored
    content-addressed, so identical chunks are shared across files and versions.
 
-### Chunk-only (V2)
+### Chunk-only storage
 
-File content is stored **only as chunks**; the whole file is *not* written as a
-standalone blob, so there is no on-disk duplication. `checkout` reconstructs each
-file by concatenating its chunks.
-
-This is backward compatible with the original V1 layout (which also wrote a
-redundant raw blob): old repositories read back correctly, and
-`cadvm gc --prune` reclaims their now-unused raw blobs.
+File content is stored **as chunks**; the whole file is not duplicated as a
+standalone blob, so there is no on-disk redundancy. `checkout` reconstructs each
+file by concatenating its chunks, and `cadvm gc --prune` removes any
+unreferenced objects.
 
 ## What is tracked
 

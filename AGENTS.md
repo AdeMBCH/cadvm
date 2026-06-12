@@ -3,23 +3,23 @@
 ## Scope
 cadvm is a local-first version manager for STEP/STP CAD files.
 
-- **Rust core (Step 1, done):** the VCS — commits, manifests, refs, branches,
-  status, diff, checkout, switch, revert, gc, config/author. Pure Rust.
-- **Geometry helper (Step 2, done):** `cpp/cadvm-geom`, a standalone
-  C++/Open CASCADE executable. `diff` computes added/removed/common volumes +
-  metrics; `mesh` tessellates the boolean pieces to triangle JSON. The Rust core
-  invokes it **as a subprocess** (no FFI). OCCT stays isolated in this one binary.
-- **3D viewer (Step 3, done):** `cadvm view` emits a single self-contained
-  HTML file with a hand-written WebGL renderer (no CDN, no server, no framework).
-  The template lives in `cadvm-cli/src/viewer.rs`.
-- **Interactive TUI (done):** `cadvm ui`, a ratatui dashboard in
-  `cadvm-cli/src/ui.rs`. It calls `cadvm-core` directly (it is the same binary);
-  geometry actions shell out to `cadvm-geom` via the core's `geom` module.
+- **Rust core:** the VCS — commits, manifests, refs, branches, status, diff,
+  checkout, switch, revert, gc, config/author. Pure Rust.
+- **Geometry helper:** `cpp/cadvm-geom`, a standalone C++/Open CASCADE
+  executable. `diff` computes added/removed/common volumes + metrics; `mesh`
+  tessellates the boolean pieces to triangle JSON. The Rust core invokes it **as
+  a subprocess** (no FFI). OCCT stays isolated in this one binary.
+- **3D viewer:** `cadvm view` emits a single self-contained HTML file with a
+  hand-written WebGL renderer (no CDN, no server, no framework). The template
+  lives in `cadvm-cli/src/viewer.rs`.
+- **Interactive TUI:** `cadvm ui`, a ratatui dashboard in `cadvm-cli/src/ui.rs`.
+  It calls `cadvm-core` directly (it is the same binary); geometry actions shell
+  out to `cadvm-geom` via the core's `geom` module.
 
 ## Architecture
-- `cadvm-cli`: CLI only.
+- `cadvm-cli`: CLI and TUI.
 - `cadvm-core`: repository logic; `geom` module shells out to the helper.
-- `cadvm-store`: content-addressed storage (chunk-only V2).
+- `cadvm-store`: content-addressed storage (chunk-based).
 - `cpp/cadvm-geom`: C++/OCCT geometry helper (subprocess, JSON over stdout).
 
 ## Do not add

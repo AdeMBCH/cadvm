@@ -97,7 +97,7 @@ enum Command {
 
     /// Revert HEAD by creating a commit that restores its parent's state.
     Revert {
-        /// Revision to revert (V1: must be HEAD).
+        /// Revision to revert (must be HEAD).
         rev: String,
         /// Revert even if the working tree is dirty.
         #[arg(long)]

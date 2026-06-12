@@ -48,7 +48,7 @@ pub enum CoreError {
     )]
     WouldOverwriteDirtyFile(PathBuf),
 
-    #[error("only reverting HEAD is supported in V1 (requested `{0}`)")]
+    #[error("only reverting HEAD is supported (requested `{0}`)")]
     RevertNonHead(String),
 
     #[error(

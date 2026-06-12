@@ -1,8 +1,13 @@
 # cadvm — CAD Version Manager
 
+[![CI](https://github.com/AdeMBCH/cadvm/actions/workflows/ci.yml/badge.svg)](https://github.com/AdeMBCH/cadvm/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/badge/docs-online-blue)](https://adembch.github.io/cadvm/)
+
 `cadvm` is a **local-first version manager for STEP/STP CAD files**. It brings
 Git-like workflows — snapshots, branches, diff, checkout, revert — to CAD data,
 with a content-addressed, deduplicated object store.
+
+📖 **Documentation: <https://adembch.github.io/cadvm/>**
 
 It goes further than text versioning: a **geometric diff** (added / removed /
 common material) via Open CASCADE, a **self-contained 3D viewer**, and an

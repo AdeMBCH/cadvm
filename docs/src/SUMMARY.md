@@ -1,6 +1,7 @@
 # Summary
 
 [Introduction](introduction.md)
+[Live demo](demo.md)
 
 # User Guide
 

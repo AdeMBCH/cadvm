@@ -32,6 +32,9 @@ is pure noise. cadvm instead:
   Open CASCADE;
 - renders that diff in a **self-contained 3D HTML viewer** (no server, no cloud).
 
+> 🧊 **See it live:** the [Live demo](demo.md) embeds a real diff you can rotate
+> and zoom right in your browser.
+
 ## Architecture
 
 cadvm is built in three layers:

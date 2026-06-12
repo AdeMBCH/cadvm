@@ -13,7 +13,8 @@
 Git-like workflows — snapshots, branches, diff, checkout, revert — to CAD data,
 with a content-addressed, deduplicated object store.
 
-📖 **Documentation: <https://adembch.github.io/cadvm/>**
+📖 **Documentation: <https://adembch.github.io/cadvm/>** ·
+🧊 **[Live 3D demo](https://adembch.github.io/cadvm/demo.html)**
 
 It goes further than text versioning: a **geometric diff** (added / removed /
 common material) via Open CASCADE, a **self-contained 3D viewer**, and an

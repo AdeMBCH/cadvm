@@ -1,0 +1,39 @@
+name: CI
+
+# Linux-only on purpose: the ubuntu runner has a 1x minute multiplier (the
+# cheapest), and on a free account the default spending limit is $0 — Actions
+# simply stop at the free quota and are never billed. macOS (10x) / Windows (2x)
+# can be added later if desired.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: fmt · clippy · test (linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo build
+        uses: Swatinem/rust-cache@v2
+
+      - name: Format
+        run: cargo fmt --all --check
+
+      - name: Clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Test
+        # The geometry integration test auto-skips when CADVM_GEOM_BIN is unset,
+        # so CI does not need Open CASCADE installed.
+        run: cargo test --all

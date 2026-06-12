@@ -4,10 +4,27 @@
 Git-like workflows — snapshots, branches, diff, checkout, revert — to CAD data,
 with a content-addressed, deduplicated object store.
 
-This repository contains **Step 1: the pure-Rust VCS core**. There is no
-geometry engine yet — STEP files are versioned as text and summarized with light
-metadata scanning. Geometric diffing comes in a later step (see
-[Roadmap](#roadmap)).
+It goes further than text versioning: a **geometric diff** (added / removed /
+common material) via Open CASCADE, a **self-contained 3D viewer**, and an
+**interactive terminal dashboard**.
+
+## Quick install
+
+```bash
+# 1. The cadvm binary (VCS + TUI) — pure Rust, all platforms:
+cargo install --path crates/cadvm-cli
+
+# 2. (optional) Geometry features (`geom-diff`, `view`) need Open CASCADE.
+#    You install OCCT yourself; cadvm does not bundle it. On Ubuntu/Debian:
+sudo apt-get install -y libocct-foundation-dev libocct-modeling-data-dev \
+    libocct-modeling-algorithms-dev libocct-data-exchange-dev cmake g++
+cpp/build.sh
+export CADVM_GEOM_BIN="$PWD/cpp/cadvm-geom/build/cadvm-geom"
+```
+
+The VCS and TUI work with step 1 alone. **Open CASCADE is a user-provided
+prerequisite** for the geometry features — see [Installation](docs/src/installation.md)
+for macOS/Windows. Full docs in [`docs/`](docs/).
 
 ## Project status
 

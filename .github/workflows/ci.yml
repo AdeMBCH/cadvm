@@ -1,9 +1,8 @@
 name: CI
 
-# Linux-only on purpose: the ubuntu runner has a 1x minute multiplier (the
-# cheapest), and on a free account the default spending limit is $0 — Actions
-# simply stop at the free quota and are never billed. macOS (10x) / Windows (2x)
-# can be added later if desired.
+# Public repository: Actions minutes are free on all runners, so we test the
+# pure-Rust binary on Linux, macOS and Windows. The C++/Open CASCADE helper is
+# not built here — the geometry tests skip automatically without CADVM_GEOM_BIN.
 on:
   push:
     branches: [main]
@@ -13,27 +12,27 @@ permissions:
   contents: read
 
 jobs:
-  check:
-    name: fmt · clippy · test (linux)
+  lint:
+    name: fmt · clippy (linux)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all --check
+      - run: cargo clippy --all-targets --all-features -- -D warnings
 
-      - name: Cache cargo build
-        uses: Swatinem/rust-cache@v2
-
-      - name: Format
-        run: cargo fmt --all --check
-
-      - name: Clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings
-
-      - name: Test
-        # The geometry integration test auto-skips when CADVM_GEOM_BIN is unset,
-        # so CI does not need Open CASCADE installed.
-        run: cargo test --all
+  test:
+    name: test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --all

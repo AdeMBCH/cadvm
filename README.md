@@ -125,8 +125,8 @@ Geometry actions (`g`, `v`) need the `cadvm-geom` helper (see
 | `cadvm revert <rev>`          | Create a commit that restores HEAD's parent state.        |
 | `cadvm gc [--dry-run\|--prune]` | Report (and optionally delete) unreferenced objects.    |
 | `cadvm config [<key>] [<value>]` | Get / set / list config (e.g. `user.name`).            |
-| `cadvm geom-diff <rev_a> <rev_b>` | Geometric diff of modified STEP files (needs `cadvm-geom`). |
-| `cadvm view <rev_a> <rev_b>`   | Generate a standalone 3D HTML viewer of the diff (needs `cadvm-geom`). |
+| `cadvm geom-diff <rev_a> <rev_b>` | Geometric diff of modified files (STEP needs `cadvm-geom`; STL/OBJ pure Rust). |
+| `cadvm view <rev_a> <rev_b>`   | Standalone 3D HTML viewer of the diff (STEP needs `cadvm-geom`; STL/OBJ pure Rust). |
 
 Tracked formats: **`.step`**, **`.stp`** (B-Rep) and **`.stl`**, **`.obj`**
 (triangle mesh). STEP/STP get the full geometric diff; STL/OBJ are versioned with
@@ -199,10 +199,9 @@ cadvm geom-diff HEAD~1 HEAD          # all modified STEP files
 cadvm geom-diff HEAD~1 HEAD -- piece.step
 ```
 
-For each modified file cadvm extracts both versions from the store to temp files,
-runs the helper, and prints the volume deltas. The Rust workspace builds and
-tests **without** OCCT; only `geom-diff`/`view` need the helper at runtime (they
-print a clear hint if `cadvm-geom` is not found).
+For each modified STEP file cadvm extracts both versions, runs the helper, and
+prints the volume deltas. Only **STEP/STP** need `cadvm-geom` (Open CASCADE);
+**STL/OBJ** are diffed in pure Rust (see below) and need nothing extra.
 
 ### 3D viewer
 
@@ -219,8 +218,25 @@ cadvm view HEAD~1 HEAD --open          # also open it in the browser
 cadvm view HEAD~1 HEAD -o diff.html    # choose the output path
 ```
 
-Under the hood the `cadvm-geom mesh` subcommand classifies each face and
-tessellates it (`BRepMesh_IncrementalMesh`), which the viewer embeds and draws.
+For STEP/STP the `cadvm-geom` helper classifies each face; for STL/OBJ the
+triangles are diffed in pure Rust. Both feed the same viewer.
+
+### Mesh diff (STL/OBJ)
+
+STL/OBJ have no B-Rep faces, so cadvm diffs their **triangles** directly — in
+pure Rust, **no Open CASCADE needed**. Each new-version triangle whose centroid
+lies on the old surface (point-to-triangle distance) is *unchanged*, one with
+nothing nearby is *added*, and old triangles with nothing nearby in the new mesh
+are *removed*. `cadvm geom-diff`/`cadvm view` therefore work on `.stl`/`.obj`
+out of the box:
+
+```bash
+cadvm geom-diff HEAD~1 HEAD     # unchanged / added / removed triangle counts
+cadvm view HEAD~1 HEAD          # same green/red/grey 3D viewer
+```
+
+Mesh diffing is fuzzier than the B-Rep diff (it depends on tessellation and a
+distance tolerance).
 
 ### Working-tree safety
 
@@ -336,12 +352,15 @@ Test fixtures live in [`tests/fixtures/`](tests/fixtures/).
   face-to-face classification; it does not yet do exact topological face
   correspondence.
 - cadvm cannot merge two concurrent edits of the same STEP file.
-- `geom-diff` and `view` need the `cadvm-geom` helper (Open CASCADE); the rest of
-  cadvm works without it.
+- `geom-diff` and `view` need the `cadvm-geom` helper (Open CASCADE) **only for
+  STEP/STP**; STL/OBJ diff in pure Rust. The rest of cadvm works without OCCT.
+- The STL/OBJ mesh diff depends on tessellation and a distance tolerance, so it
+  is fuzzier than the B-Rep diff.
 
 ## Roadmap
 
-- Mesh-based geometric diff + 3D viewer for STL/OBJ (currently metadata only).
+- Sharper mesh diff (point sampling beyond centroids, configurable tolerance) and
+  more mesh formats (glTF/PLY).
 - A staging index and richer merge tooling.
 - Per-edge correspondence and freeform-surface matching beyond the analytic cases.
 

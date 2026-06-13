@@ -1,10 +1,15 @@
 # Geometric diff
 
-The metadata diff (`cadvm diff`) never inspects geometry. Real CAD diffing lives
-in **`cpp/cadvm-geom`**, a standalone C++/Open CASCADE executable that the Rust
-core runs as a subprocess (no FFI — OCCT stays isolated in this one binary).
+The metadata diff (`cadvm diff`) never inspects geometry. cadvm diffs geometry
+two ways, depending on the format:
 
-See [Installation](installation.md#2-the-geometry-helper-optional) to build it.
+- **STEP/STP** (B-Rep) — via **`cpp/cadvm-geom`**, a standalone C++/Open CASCADE
+  executable run as a subprocess (no FFI). Needs Open CASCADE; see
+  [Installation](installation.md#2-geometry-features-open-cascade-prerequisite).
+- **STL/OBJ** (mesh) — a **pure-Rust** triangle diff built into `cadvm`; no Open
+  CASCADE required (see [Mesh diff](#mesh-diff-stlobj) below).
+
+## B-Rep diff (STEP/STP)
 
 ## What it computes
 
@@ -60,4 +65,35 @@ By default it diffs every modified STEP file; restrict it with `-- <file>`.
 handled geometry failure prints `{"status":"error", ...}` and still exits 0, so
 the caller always receives structured output.
 
-To visualize the diff in 3D, see [3D viewer](viewer.md).
+## Mesh diff (STL/OBJ)
+
+Triangle meshes have no B-Rep faces or solids, so the boolean pipeline does not
+apply. Instead cadvm classifies each triangle by its **distance to the other
+mesh** — entirely in Rust, no Open CASCADE:
+
+- a triangle of the new version whose centroid lies on the old surface
+  (point-to-triangle distance below a tolerance) is **unchanged**;
+- one with nothing nearby is **added**;
+- an old-version triangle with nothing nearby in the new mesh is **removed**.
+
+Using point-to-triangle distance (not vertex-to-vertex) means a shared face
+matches even when the two meshes triangulate it differently.
+
+```bash
+cadvm geom-diff HEAD~1 HEAD          # works on .stl/.obj with no helper
+```
+
+```text
+  part.stl
+    unchanged: 114 triangles
+    added:     158 triangles
+    removed:   64 triangles
+    bbox:      40.00×30.00×28.00
+    (distance-based mesh diff)
+```
+
+Mesh diffing is inherently fuzzier than the B-Rep diff (it depends on
+tessellation and a distance tolerance), but it needs no Open CASCADE and feeds
+the same 3D viewer.
+
+To visualize either diff in 3D, see [3D viewer](viewer.md).

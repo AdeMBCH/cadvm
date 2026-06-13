@@ -18,9 +18,11 @@
 
 #include <BRepAlgoAPI_Cut.hxx>
 #include <BRepAlgoAPI_Fuse.hxx>
+#include <BRepMesh_IncrementalMesh.hxx>
 #include <BRepPrimAPI_MakeBox.hxx>
 #include <BRepPrimAPI_MakeCylinder.hxx>
 #include <STEPControl_Writer.hxx>
+#include <StlAPI_Writer.hxx>
 #include <TopoDS_Shape.hxx>
 #include <gp_Ax2.hxx>
 #include <gp_Dir.hxx>
@@ -36,6 +38,15 @@ static void write_step(const TopoDS_Shape& shape, const std::string& path) {
     }
 }
 
+static void write_stl(const TopoDS_Shape& shape, const std::string& path) {
+    BRepMesh_IncrementalMesh mesher(shape, 0.4, Standard_False, 0.4, Standard_True);
+    mesher.Perform();
+    StlAPI_Writer writer;
+    if (!writer.Write(shape, path.c_str())) {
+        throw std::runtime_error("STL write failed for " + path);
+    }
+}
+
 static TopoDS_Shape hole(double cx, double cy) {
     // Ø10 vertical cylinder, taller than the block so it cuts all the way.
     gp_Ax2 axis(gp_Pnt(cx, cy, -1.0), gp_Dir(0.0, 0.0, 1.0));
@@ -43,7 +54,8 @@ static TopoDS_Shape hole(double cx, double cy) {
 }
 
 int main(int argc, char** argv) {
-    if (argc != 3) {
+    // Usage: genblocks v1.step v2.step [v1.stl v2.stl]
+    if (argc != 3 && argc != 5) {
         return 2;
     }
     const TopoDS_Shape block = BRepPrimAPI_MakeBox(40.0, 30.0, 20.0).Shape();
@@ -59,5 +71,9 @@ int main(int argc, char** argv) {
 
     write_step(v1, argv[1]);
     write_step(v2, argv[2]);
+    if (argc == 5) {
+        write_stl(v1, argv[3]);
+        write_stl(v2, argv[4]);
+    }
     return 0;
 }

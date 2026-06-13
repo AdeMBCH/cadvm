@@ -386,6 +386,23 @@ fn hash_cache_reuses_and_invalidates() {
 }
 
 #[test]
+fn mesh_diff_classifies_stl_changes() {
+    use cadvm_core::format::CadFormat;
+    use cadvm_core::meshdiff;
+
+    let a = include_bytes!("../../../tests/fixtures/block_v1.stl");
+    let b = include_bytes!("../../../tests/fixtures/block_v2.stl");
+    let d = meshdiff::diff(a, b, CadFormat::Stl);
+    assert!(d.is_ok());
+    let l = d.layers.unwrap();
+    // The shared block body matches; the moved hole + added boss show up as
+    // removed/added. No Open CASCADE involved.
+    assert!(l.unchanged.triangle_count() > 0, "body should match");
+    assert!(l.added.triangle_count() > 0, "boss/new hole are added");
+    assert!(l.removed.triangle_count() > 0, "old hole is removed");
+}
+
+#[test]
 fn config_records_commit_author() {
     use cadvm_core::config::{self, Config};
     let (_d, repo) = setup();

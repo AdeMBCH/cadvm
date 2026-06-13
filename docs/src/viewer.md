@@ -32,10 +32,21 @@ cadvm view HEAD~1 HEAD --open          # also open in the default browser
 
 You can also launch it straight from the [TUI](tui.md) with the `v` key.
 
+## STEP/STP vs STL/OBJ
+
+- **STEP/STP** (B-Rep): the `cadvm-geom` helper classifies each *face* by its
+  underlying surface and tessellates them — needs Open CASCADE.
+- **STL/OBJ** (mesh): cadvm diffs the triangles directly in **pure Rust** (no
+  Open CASCADE). Each triangle of the new mesh is *unchanged* if it lies on the
+  old surface (point-to-triangle distance) and *added* otherwise; old triangles
+  with nothing nearby in the new mesh are *removed*. So `view` works on meshes
+  even without the helper installed.
+
+Both paths emit the same unchanged/added/removed layers, so the viewer is
+identical.
+
 ## Under the hood
 
-`cadvm-geom mesh a.step b.step out.json` classifies each face (unchanged / added
-/ removed) and tessellates them (`BRepMesh_IncrementalMesh`) into flat-shaded,
-per-color triangle meshes. cadvm
-embeds that JSON into the HTML template (`cadvm-cli/src/viewer.rs`) and the WebGL
-code renders it with per-layer colors and transparency.
+The classifier emits flat-shaded, per-color triangle layers as JSON; cadvm embeds
+that into the HTML template (`cadvm-cli/src/viewer.rs`) and the WebGL code renders
+it with per-layer colors and transparency.

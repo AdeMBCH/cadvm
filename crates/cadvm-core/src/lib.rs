@@ -19,6 +19,7 @@ pub mod geom;
 pub mod ignore;
 pub mod index;
 pub mod mesh;
+pub mod meshdiff;
 pub mod model;
 pub mod repo;
 pub mod revision;

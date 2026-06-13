@@ -153,6 +153,11 @@ impl MeshDiff {
             l.unchanged.triangle_count() + l.added.triangle_count() + l.removed.triangle_count()
         })
     }
+
+    /// Serialize to the JSON the 3D viewer embeds.
+    pub fn to_json(&self) -> String {
+        serde_json::to_string(self).unwrap_or_default()
+    }
 }
 
 /// Resolve the path to the `cadvm-geom` binary.

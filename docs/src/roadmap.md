@@ -5,9 +5,11 @@
 - The geometric diff matches faces by their underlying analytic surface (plane,
   cylinder, cone, sphere, torus); freeform B-spline faces use a coarser
   area + centroid fallback.
-- cadvm cannot merge two concurrent edits of the same STEP file.
-- `geom-diff` / `view` require the `cadvm-geom` helper (OCCT). The rest of cadvm
-  works without it.
+- cadvm cannot merge two concurrent edits of the same file.
+- The STL/OBJ mesh diff depends on tessellation and a distance tolerance, so it
+  is fuzzier than the B-Rep diff.
+- `geom-diff` / `view` need the `cadvm-geom` helper (OCCT) **only for STEP/STP**;
+  STL/OBJ diff in pure Rust. The rest of cadvm works without OCCT.
 
 ## Done
 
@@ -17,14 +19,14 @@
   surface-based face-to-face diff.
 - **3D viewer** — `cadvm view`: self-contained WebGL HTML, per-face
   green/red/grey changes.
+- **STL/OBJ support** — versioning + mesh metadata, and a pure-Rust
+  distance-based mesh diff feeding the same 3D viewer (no Open CASCADE).
 - **Interactive TUI** — `cadvm ui`, and shell completions.
 - **Cross-platform** — CI on Linux/macOS/Windows and prebuilt release binaries.
 - **Docs** — user guide and API reference published online.
 
 ## Next
 
-- Mesh-based geometric diff and 3D viewer for STL/OBJ (today they are versioned
-  with metadata only; the B-Rep volume/face diff applies to STEP/STP).
-
-- Exact topological face correspondence (not just volumetric / heuristic).
+- Sharper mesh diff (point sampling beyond centroids, configurable tolerance).
+- glTF/PLY mesh formats.
 - A staging index and richer merge tooling.

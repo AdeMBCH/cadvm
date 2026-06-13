@@ -16,8 +16,8 @@ Terminal, Terminal.app, common Linux terminals).
 
 `cadvm-geom` works wherever **Open CASCADE** and a C++17 toolchain are available
 — all three OSes qualify — but the *installation* of OCCT differs per platform
-(see [Installation](installation.md)). The VCS and TUI work without it; only
-`geom-diff` and `view` require it at runtime.
+(see [Installation](installation.md)). It is only needed for the **STEP/STP**
+geometric diff; the VCS, TUI, and the **STL/OBJ** mesh diff all work without it.
 
 ## Tested status
 

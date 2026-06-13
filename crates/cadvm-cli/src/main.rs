@@ -15,6 +15,7 @@ use cadvm_core::config::Config;
 use cadvm_core::diff::{self, ManifestDiff};
 use cadvm_core::gc;
 use cadvm_core::geom;
+use cadvm_core::meshdiff;
 use cadvm_core::model::FileEntry;
 use cadvm_core::revision;
 use cadvm_core::snapshot;
@@ -612,6 +613,12 @@ fn cmd_geom_diff(rev_a: &str, rev_b: &str, paths: &[PathBuf]) -> Result<()> {
     for (i, path) in targets.iter().enumerate() {
         println!("\n  {}", path.display());
         match (manifest_a.files.get(path), manifest_b.files.get(path)) {
+            (Some(entry_a), Some(entry_b)) if entry_b.format.is_mesh() => {
+                // STL/OBJ: distance-based mesh diff, pure Rust (no Open CASCADE).
+                let content_a = repo.store().read_file_content(&entry_a.blob_ref)?;
+                let content_b = repo.store().read_file_content(&entry_b.blob_ref)?;
+                print_mesh_diff(&meshdiff::diff(&content_a, &content_b, entry_b.format));
+            }
             (Some(entry_a), Some(entry_b)) => {
                 let file_a = extract_version(&repo, &tmp, entry_a, &format!("a{i}"))?;
                 let file_b = extract_version(&repo, &tmp, entry_b, &format!("b{i}"))?;
@@ -624,6 +631,26 @@ fn cmd_geom_diff(rev_a: &str, rev_b: &str, paths: &[PathBuf]) -> Result<()> {
         }
     }
     Ok(())
+}
+
+fn print_mesh_diff(m: &geom::MeshDiff) {
+    if !m.is_ok() {
+        println!(
+            "    mesh error: {}",
+            m.error.as_deref().unwrap_or("unknown")
+        );
+        return;
+    }
+    if let Some(l) = &m.layers {
+        println!("    unchanged: {} triangles", l.unchanged.triangle_count());
+        println!("    added:     {} triangles", l.added.triangle_count());
+        println!("    removed:   {} triangles", l.removed.triangle_count());
+    }
+    if let Some(b) = &m.bbox {
+        let s = b.size();
+        println!("    bbox:      {:.2}×{:.2}×{:.2}", s[0], s[1], s[2]);
+    }
+    println!("    (distance-based mesh diff)");
 }
 
 fn cmd_view(
@@ -671,27 +698,31 @@ fn cmd_view(
         .get(&file)
         .with_context(|| format!("`{}` not present in {rev_b}", file.display()))?;
 
-    let tmp = repo.tmp_dir();
-    let path_a = extract_version(&repo, &tmp, entry_a, "view-a")?;
-    let path_b = extract_version(&repo, &tmp, entry_b, "view-b")?;
-    let out_json = tmp.join("view-mesh.json");
-
-    let mesh = geom::mesh_files(&path_a, &path_b, &out_json);
-    let _ = std::fs::remove_file(&path_a);
-    let _ = std::fs::remove_file(&path_b);
-    let mesh = mesh?;
-    if !mesh.is_ok() {
+    // Mesh formats (STL/OBJ) diff in pure Rust (no Open CASCADE); B-Rep formats
+    // (STEP/STP) go through the cadvm-geom helper.
+    let mesh = if entry_b.format.is_mesh() {
+        let content_a = repo.store().read_file_content(&entry_a.blob_ref)?;
+        let content_b = repo.store().read_file_content(&entry_b.blob_ref)?;
+        meshdiff::diff(&content_a, &content_b, entry_b.format)
+    } else {
+        let tmp = repo.tmp_dir();
+        let path_a = extract_version(&repo, &tmp, entry_a, "view-a")?;
+        let path_b = extract_version(&repo, &tmp, entry_b, "view-b")?;
+        let out_json = tmp.join("view-mesh.json");
+        let result = geom::mesh_files(&path_a, &path_b, &out_json);
+        let _ = std::fs::remove_file(&path_a);
+        let _ = std::fs::remove_file(&path_b);
         let _ = std::fs::remove_file(&out_json);
+        result?
+    };
+    if !mesh.is_ok() {
         anyhow::bail!(
-            "geometry helper error: {}",
+            "geometry error: {}",
             mesh.error.as_deref().unwrap_or("unknown")
         );
     }
 
-    let mesh_json = std::fs::read_to_string(&out_json)
-        .with_context(|| format!("reading {}", out_json.display()))?;
-    let _ = std::fs::remove_file(&out_json);
-
+    let mesh_json = mesh.to_json();
     let title = format!("{}  ({}..{})", file.display(), a_id.short(), b_id.short());
     let html = viewer::render(&title, &mesh_json);
 

@@ -64,6 +64,20 @@ export CADVM_GEOM_BIN="$PWD/cpp/cadvm-geom/build/cadvm-geom"
 Add that line to your `~/.bashrc` (or shell profile) to make it permanent. If
 `cadvm-geom` is on your `PATH`, the env var is optional.
 
+## One-command install / uninstall
+
+From a clone, on Linux/macOS:
+
+```bash
+./scripts/install.sh      # builds & installs cadvm; also builds the geometry
+                          # helper when Open CASCADE is detected
+./scripts/uninstall.sh    # removes the binary and the geometry build
+```
+
+`uninstall.sh` removes the `cadvm` binary (via `cargo uninstall cadvm-cli`) and
+the locally built helper. **Your repositories' `.cadvm/` data is left untouched**;
+if you exported `CADVM_GEOM_BIN` in your shell profile, remove that line.
+
 ## Shell completions
 
 `cadvm` can generate completion scripts for bash, zsh, fish, elvish and

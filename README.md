@@ -48,6 +48,13 @@ The version control and TUI work **without** Open CASCADE; only the geometry
 features require it. For macOS/Windows OCCT setup, shell completions and more,
 see the **[documentation](https://adembch.github.io/cadvm/)**.
 
+**One-command install / uninstall** from a clone (Linux/macOS):
+
+```bash
+./scripts/install.sh      # builds & installs cadvm (+ the geometry helper if OCCT is present)
+./scripts/uninstall.sh    # removes the binary and the geometry build (your repos are untouched)
+```
+
 ## Features
 
 - Snapshots, history, branches, switch, revert, checkout and gc for STEP/STP files.

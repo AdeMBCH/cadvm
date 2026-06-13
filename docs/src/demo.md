@@ -1,18 +1,18 @@
 # Live demo
 
-Below is a **real `cadvm view` output** — the geometric diff between two versions
-of the same block, where a hole has been **moved** from one end to the other.
+Below is a **real `cadvm view` output**. Between the two versions of this block a
+hole was **moved** from the left to the right, and a **boss** was added on top.
 It is rendered live in your browser; nothing is installed or sent anywhere, the
 whole 3D scene is embedded in the page.
 
-The block body stays **grey** (unchanged — even the re-pierced faces, since face
-matching is surface-based); the **removed** hole is **red** and the **added** one
-is **green**.
+The unchanged body is drawn **translucent grey** so you can see the changes —
+including the ones *inside* the part:
 
-- **Drag** to rotate · **scroll** to zoom
-- Each **face** is colored by how it changed: **grey** = unchanged, **green** =
-  added in the new version, **red** = removed (present only in the old one)
-- Toggle any layer with the checkboxes (top-left)
+- **green** — added: the new hole (visible through the body) and the boss on top;
+- **red** — removed: the old hole on the left;
+- **grey** — unchanged faces (the block body keeps the same surfaces).
+
+Drag to rotate, scroll to zoom, and toggle any layer in the panel.
 
 <iframe
   src="demo-viewer.html"

@@ -2,9 +2,10 @@
 // diff is easy to read (mostly unchanged, with one clear added feature).
 //
 //   block_v1.step : a 40x30x20 block with a Ø10 through-hole near the left.
-//   block_v2.step : the same block with that hole moved to the right.
+//   block_v2.step : the hole moved to the right, plus a raised boss on top.
 // With exact (surface-based) face matching this reads as: the block body is
-// unchanged (grey), the old hole is removed (red) and the new one added (green).
+// unchanged (grey), the old hole is removed (red), and the new hole and the boss
+// are added (green) — one change inside the part, one clearly on its surface.
 //
 // Not part of the build. Compile manually (needs Open CASCADE):
 //   g++ -std=c++17 -I/usr/include/opencascade tests/fixtures/generate-blocks.cpp \
@@ -16,6 +17,7 @@
 #include <string>
 
 #include <BRepAlgoAPI_Cut.hxx>
+#include <BRepAlgoAPI_Fuse.hxx>
 #include <BRepPrimAPI_MakeBox.hxx>
 #include <BRepPrimAPI_MakeCylinder.hxx>
 #include <STEPControl_Writer.hxx>
@@ -48,8 +50,12 @@ int main(int argc, char** argv) {
 
     // v1: one hole near the left end.
     const TopoDS_Shape v1 = BRepAlgoAPI_Cut(block, hole(12.0, 15.0));
-    // v2: the same block with the hole moved to the right end.
-    const TopoDS_Shape v2 = BRepAlgoAPI_Cut(block, hole(28.0, 15.0));
+
+    // v2: hole moved to the right end, plus a Ø12 x 8 boss on top.
+    const TopoDS_Shape v2_holed = BRepAlgoAPI_Cut(block, hole(28.0, 15.0));
+    gp_Ax2 boss_axis(gp_Pnt(14.0, 15.0, 20.0), gp_Dir(0.0, 0.0, 1.0));
+    const TopoDS_Shape boss = BRepPrimAPI_MakeCylinder(boss_axis, 6.0, 8.0).Shape();
+    const TopoDS_Shape v2 = BRepAlgoAPI_Fuse(v2_holed, boss);
 
     write_step(v1, argv[1]);
     write_step(v2, argv[2]);

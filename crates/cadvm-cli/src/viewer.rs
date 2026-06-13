@@ -56,10 +56,12 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
 const DATA = /*__DATA__*/null;
 
 // key, label, rgb color, alpha, default-on. Faces are classified per face.
+// The unchanged body is drawn translucent so added/removed faces (often inside
+// the part, e.g. a hole's wall) are clearly visible through it.
 const LAYERS = [
-  {key:'unchanged', label:'unchanged faces', color:[0.60,0.62,0.66], alpha:1.0, on:true},
-  {key:'added',     label:'added faces',     color:[0.22,0.78,0.35], alpha:1.0, on:true},
-  {key:'removed',   label:'removed faces',   color:[0.88,0.28,0.23], alpha:1.0, on:true},
+  {key:'unchanged', label:'unchanged (body)', color:[0.62,0.64,0.68], alpha:0.28, on:true},
+  {key:'added',     label:'added',            color:[0.18,0.80,0.34], alpha:1.0,  on:true},
+  {key:'removed',   label:'removed',          color:[0.92,0.26,0.21], alpha:1.0,  on:true},
 ];
 
 const canvas = document.getElementById('c');

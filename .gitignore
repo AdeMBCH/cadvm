@@ -4,6 +4,7 @@
 # Local tooling / editor state (not part of the project)
 /.claude/
 /.vscode/
+/AGENTS.md
 
 # C++ helper build output
 /cpp/cadvm-geom/build/

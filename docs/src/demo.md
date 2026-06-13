@@ -1,12 +1,13 @@
 # Live demo
 
 Below is a **real `cadvm view` output** — the geometric diff between two versions
-of the same block: the first has one hole, the second has **a second hole added**.
+of the same block, where a hole has been **moved** from one end to the other.
 It is rendered live in your browser; nothing is installed or sent anywhere, the
 whole 3D scene is embedded in the page.
 
-Most of the block is **grey** (unchanged); the faces touched by the new hole show
-up in **green** (added) and **red** (removed).
+The block body stays **grey** (unchanged — even the re-pierced faces, since face
+matching is surface-based); the **removed** hole is **red** and the **added** one
+is **green**.
 
 - **Drag** to rotate · **scroll** to zoom
 - Each **face** is colored by how it changed: **grey** = unchanged, **green** =

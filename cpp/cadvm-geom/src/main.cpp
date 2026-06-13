@@ -44,7 +44,13 @@
 #include <TopoDS.hxx>
 #include <TopoDS_Face.hxx>
 #include <TopoDS_Shape.hxx>
+#include <gp_Cone.hxx>
+#include <gp_Cylinder.hxx>
+#include <gp_Dir.hxx>
+#include <gp_Pln.hxx>
 #include <gp_Pnt.hxx>
+#include <gp_Sphere.hxx>
+#include <gp_Torus.hxx>
 #include <gp_Trsf.hxx>
 #include <gp_Vec.hxx>
 
@@ -115,20 +121,106 @@ std::string json_escape(const std::string& s) {
 
 // ---- topological (face-to-face) diff --------------------------------------
 
-// A coarse geometric signature for a face: surface type + rounded area and
-// centre of mass. Faces of A and B that share a signature are treated as the
-// "same" face (common); the rest are added (only in B) or removed (only in A).
-// This is a heuristic topological diff — robust enough for typical edits without
-// a full topological correspondence solver.
+// Round a length to microns / a direction component to 1e-5, as integers.
+static long long rl(double x) { return static_cast<long long>(std::llround(x * 1000.0)); }
+static long long rd(double x) { return static_cast<long long>(std::llround(x * 100000.0)); }
+
+// Is (x,y,z) in the canonical hemisphere (first significant component positive)?
+// Used to give a surface and its reverse the same orientation-independent key.
+static bool canonical(double x, double y, double z) {
+    const double e = 1e-7;
+    if (x > e) return true;
+    if (x < -e) return false;
+    if (y > e) return true;
+    if (y < -e) return false;
+    return z >= 0;
+}
+
+// A signature of a face's *underlying surface* (plane equation, cylinder axis +
+// radius, …), invariant to how the face is trimmed. Two faces lying on the same
+// surface match even if one was cut by a new feature — so a wall that merely
+// gets a hole stays "unchanged", and only genuinely new/removed surfaces (e.g.
+// the hole's cylinder) show up as added/removed. Freeform surfaces fall back to
+// area + centroid.
 std::string face_signature(const TopoDS_Face& f) {
-    BRepAdaptor_Surface surf(f);
-    GProp_GProps props;
-    BRepGProp::SurfaceProperties(f, props);
-    const gp_Pnt c = props.CentreOfMass();
-    auto r = [](double x) { return static_cast<long long>(std::llround(x * 100.0)); };
+    BRepAdaptor_Surface s(f);
     std::ostringstream o;
-    o << static_cast<int>(surf.GetType()) << ':' << r(props.Mass()) << ':' << r(c.X()) << ':'
-      << r(c.Y()) << ':' << r(c.Z());
+    switch (s.GetType()) {
+        case GeomAbs_Plane: {
+            const gp_Pln pl = s.Plane();
+            const gp_Dir n = pl.Axis().Direction();
+            const gp_Pnt l = pl.Location();
+            double nx = n.X(), ny = n.Y(), nz = n.Z();
+            double d = nx * l.X() + ny * l.Y() + nz * l.Z();  // signed distance to origin
+            if (!canonical(nx, ny, nz)) {
+                nx = -nx;
+                ny = -ny;
+                nz = -nz;
+                d = -d;
+            }
+            o << "plane:" << rd(nx) << "," << rd(ny) << "," << rd(nz) << "," << rl(d);
+            break;
+        }
+        case GeomAbs_Cylinder: {
+            const gp_Cylinder cy = s.Cylinder();
+            const gp_Dir dir = cy.Axis().Direction();
+            const gp_Pnt l = cy.Axis().Location();
+            double dx = dir.X(), dy = dir.Y(), dz = dir.Z();
+            // Canonical point: foot of perpendicular from the origin onto the axis.
+            const double t = -(l.X() * dx + l.Y() * dy + l.Z() * dz);
+            const double px = l.X() + t * dx, py = l.Y() + t * dy, pz = l.Z() + t * dz;
+            if (!canonical(dx, dy, dz)) {
+                dx = -dx;
+                dy = -dy;
+                dz = -dz;
+            }
+            o << "cyl:" << rd(dx) << "," << rd(dy) << "," << rd(dz) << "," << rl(px) << "," << rl(py)
+              << "," << rl(pz) << "," << rl(cy.Radius());
+            break;
+        }
+        case GeomAbs_Sphere: {
+            const gp_Sphere sp = s.Sphere();
+            const gp_Pnt c = sp.Location();
+            o << "sph:" << rl(c.X()) << "," << rl(c.Y()) << "," << rl(c.Z()) << "," << rl(sp.Radius());
+            break;
+        }
+        case GeomAbs_Cone: {
+            const gp_Cone cn = s.Cone();
+            const gp_Dir dir = cn.Axis().Direction();
+            const gp_Pnt a = cn.Apex();
+            double dx = dir.X(), dy = dir.Y(), dz = dir.Z();
+            if (!canonical(dx, dy, dz)) {
+                dx = -dx;
+                dy = -dy;
+                dz = -dz;
+            }
+            o << "cone:" << rd(dx) << "," << rd(dy) << "," << rd(dz) << "," << rl(a.X()) << ","
+              << rl(a.Y()) << "," << rl(a.Z()) << "," << rl(cn.SemiAngle());
+            break;
+        }
+        case GeomAbs_Torus: {
+            const gp_Torus tr = s.Torus();
+            const gp_Dir dir = tr.Axis().Direction();
+            const gp_Pnt c = tr.Location();
+            double dx = dir.X(), dy = dir.Y(), dz = dir.Z();
+            if (!canonical(dx, dy, dz)) {
+                dx = -dx;
+                dy = -dy;
+                dz = -dz;
+            }
+            o << "tor:" << rl(c.X()) << "," << rl(c.Y()) << "," << rl(c.Z()) << "," << rd(dx) << ","
+              << rd(dy) << "," << rd(dz) << "," << rl(tr.MajorRadius()) << "," << rl(tr.MinorRadius());
+            break;
+        }
+        default: {
+            // Freeform (BSpline/Bezier/…): coarse fallback on area + centroid.
+            GProp_GProps props;
+            BRepGProp::SurfaceProperties(f, props);
+            const gp_Pnt c = props.CentreOfMass();
+            o << "free:" << static_cast<int>(s.GetType()) << ":" << rl(props.Mass()) << ":"
+              << rl(c.X()) << ":" << rl(c.Y()) << ":" << rl(c.Z());
+        }
+    }
     return o.str();
 }
 

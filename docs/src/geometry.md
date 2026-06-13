@@ -19,9 +19,12 @@ For each it reports a **volume** and face count, plus per-input metrics (volume,
 surface area, solid/shell/face counts, bounding box).
 
 It also reports a **topological face-to-face diff**: faces of A and B are matched
-by a coarse geometric signature (surface type + rounded area + centre of mass),
-giving counts of *common / added / removed* faces. This is a heuristic, robust
-enough for typical edits without a full correspondence solver.
+by their **underlying surface** — the plane equation, the cylinder's axis and
+radius, the cone/sphere/torus parameters — which is invariant to how the face is
+trimmed. A wall that merely gains a hole keeps the same plane and counts as
+*unchanged*; only genuinely new or removed surfaces (e.g. the hole's cylinder)
+are reported as *added* / *removed*. (Freeform B-spline faces fall back to an
+area + centroid signature.)
 
 ## Using it
 

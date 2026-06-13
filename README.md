@@ -182,8 +182,10 @@ computes the boolean decomposition of their solids, and reports volumes:
 - `removed` — material in A not in B (A − B).
 
 It also reports a **topological face-to-face diff**: faces of A and B are matched
-by a coarse geometric signature (surface type + rounded area + centre of mass),
-yielding counts of *common / added / removed* faces alongside the volumes.
+by their **underlying surface** (plane equation, cylinder axis + radius, …),
+invariant to how each face is trimmed — so a wall that merely gets a hole stays
+*unchanged* and only genuinely new/removed surfaces count. This yields *common /
+added / removed* face counts alongside the volumes.
 
 It needs the `cadvm-geom` helper and Open CASCADE — see
 [Installation](#installation) to build it. Then:
@@ -335,8 +337,8 @@ Test fixtures live in [`tests/fixtures/`](tests/fixtures/).
 
 ## Roadmap
 
-- Exact topological face correspondence (not just volumetric / heuristic).
 - A staging index and richer merge tooling.
+- Per-edge correspondence and freeform-surface matching beyond the analytic cases.
 
 ## Contributing
 

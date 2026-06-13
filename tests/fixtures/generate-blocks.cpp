@@ -1,8 +1,10 @@
 // Generate the demo fixtures: two versions of the same part so the per-face
 // diff is easy to read (mostly unchanged, with one clear added feature).
 //
-//   block_v1.step : a 40x30x20 block with one Ø10 through-hole.
-//   block_v2.step : the same block with a SECOND Ø10 hole added.
+//   block_v1.step : a 40x30x20 block with a Ø10 through-hole near the left.
+//   block_v2.step : the same block with that hole moved to the right.
+// With exact (surface-based) face matching this reads as: the block body is
+// unchanged (grey), the old hole is removed (red) and the new one added (green).
 //
 // Not part of the build. Compile manually (needs Open CASCADE):
 //   g++ -std=c++17 -I/usr/include/opencascade tests/fixtures/generate-blocks.cpp \
@@ -46,8 +48,8 @@ int main(int argc, char** argv) {
 
     // v1: one hole near the left end.
     const TopoDS_Shape v1 = BRepAlgoAPI_Cut(block, hole(12.0, 15.0));
-    // v2: v1 plus a second hole near the right end.
-    const TopoDS_Shape v2 = BRepAlgoAPI_Cut(v1, hole(28.0, 15.0));
+    // v2: the same block with the hole moved to the right end.
+    const TopoDS_Shape v2 = BRepAlgoAPI_Cut(block, hole(28.0, 15.0));
 
     write_step(v1, argv[1]);
     write_step(v2, argv[2]);

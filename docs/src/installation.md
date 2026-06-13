@@ -11,11 +11,20 @@ works without Open CASCADE.
 
 ## 1. The `cadvm` binary
 
-### Prebuilt binary (no Rust needed)
+### One-line install (Linux / macOS)
 
-Each [release](https://github.com/AdeMBCH/cadvm/releases/latest) ships binaries
-for Linux, macOS (Apple Silicon) and Windows. Download the one for your platform
-and put it on your `PATH`:
+```bash
+curl -fsSL https://raw.githubusercontent.com/AdeMBCH/cadvm/main/scripts/install-release.sh | sh
+```
+
+This detects your OS/arch, downloads the matching binary from the
+[latest release](https://github.com/AdeMBCH/cadvm/releases/latest), and installs
+it into `~/.local/bin` (override the location with `CADVM_INSTALL_DIR`).
+
+### Prebuilt binary (manual download)
+
+Each release ships binaries for Linux, macOS (Apple Silicon) and Windows.
+Download the one for your platform and put it on your `PATH`:
 
 ```bash
 # Linux

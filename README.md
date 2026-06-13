@@ -29,13 +29,16 @@ cadvm installs in two layers. The first is all most users need.
 **1. The `cadvm` binary** (version control + TUI) — runs on Linux, macOS and
 Windows (verified in CI on all three).
 
-*Prebuilt binary (no Rust needed)* — download the one for your platform from the
-[latest release](https://github.com/AdeMBCH/cadvm/releases/latest), e.g. on Linux:
+*One-line install* (Linux / macOS, no Rust needed):
 
 ```bash
-curl -L -o cadvm https://github.com/AdeMBCH/cadvm/releases/latest/download/cadvm-x86_64-unknown-linux-gnu
-chmod +x cadvm && sudo mv cadvm /usr/local/bin/
+curl -fsSL https://raw.githubusercontent.com/AdeMBCH/cadvm/main/scripts/install-release.sh | sh
 ```
+
+It downloads the matching prebuilt binary from the
+[latest release](https://github.com/AdeMBCH/cadvm/releases/latest) into
+`~/.local/bin` (override with `CADVM_INSTALL_DIR`). Windows users download
+`cadvm-x86_64-pc-windows-msvc.exe` from the release page.
 
 *Or build from source* (needs a recent stable Rust toolchain):
 

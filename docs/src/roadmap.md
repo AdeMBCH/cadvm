@@ -8,22 +8,20 @@
 - cadvm cannot merge two concurrent edits of the same STEP file.
 - `geom-diff` / `view` require the `cadvm-geom` helper (OCCT). The rest of cadvm
   works without it.
-- Built and tested on Linux only so far (see [Platform support](platforms.md)).
 
 ## Done
 
 - **VCS core** — snapshots, log, status, diff, branches, switch, revert,
-  checkout, gc, config/author, deduplicated chunk-only storage.
+  checkout, gc, config/author, deduplicated, gzip-compressed chunk storage.
 - **Geometric diff** — `cadvm-geom` (C++/OCCT): boolean volumes + metrics +
   heuristic topological face diff.
 - **3D viewer** — `cadvm view`: self-contained WebGL HTML, full-part context +
   green/red/grey changes.
-- **Interactive TUI** — `cadvm ui`.
-- **Shell completions** — `cadvm completions`.
+- **Interactive TUI** — `cadvm ui`, and shell completions.
+- **Cross-platform** — CI on Linux/macOS/Windows and prebuilt release binaries.
+- **Docs** — user guide and API reference published online.
 
 ## Next
 
 - Exact topological face correspondence (not just volumetric / heuristic).
-- Multi-OS CI and prebuilt binaries for easy installation.
 - A staging index and richer merge tooling.
-- Hosting this documentation (e.g. GitHub Pages).

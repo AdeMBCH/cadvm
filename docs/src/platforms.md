@@ -21,10 +21,10 @@ Terminal, Terminal.app, common Linux terminals).
 
 ## Tested status
 
-cadvm has so far been **built and tested on Ubuntu 24.04 (OCCT 7.6)**. The code
-is written to be portable and *should* build on macOS and Windows, but those
-targets are **not yet verified** in CI. If you try them, expect to adjust the
-OCCT toolkit names or CMake discovery in `cpp/cadvm-geom/CMakeLists.txt`.
+The Rust binary (version control + TUI) is **built and tested on Linux, macOS and
+Windows in CI** on every push, and **prebuilt binaries for all three** are
+attached to each [release](https://github.com/AdeMBCH/cadvm/releases/latest).
 
-> Multi-OS continuous integration (to produce verified, prebuilt binaries) is on
-> the [roadmap](roadmap.md).
+The geometry helper has been built and exercised on **Ubuntu 24.04 (OCCT 7.6)**.
+On macOS/Windows you may need to adjust the OCCT toolkit names or CMake discovery
+in `cpp/cadvm-geom/CMakeLists.txt`.

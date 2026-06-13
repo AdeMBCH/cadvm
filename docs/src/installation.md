@@ -11,6 +11,22 @@ works without Open CASCADE.
 
 ## 1. The `cadvm` binary
 
+### Prebuilt binary (no Rust needed)
+
+Each [release](https://github.com/AdeMBCH/cadvm/releases/latest) ships binaries
+for Linux, macOS (Apple Silicon) and Windows. Download the one for your platform
+and put it on your `PATH`:
+
+```bash
+# Linux
+curl -L -o cadvm https://github.com/AdeMBCH/cadvm/releases/latest/download/cadvm-x86_64-unknown-linux-gnu
+chmod +x cadvm && sudo mv cadvm /usr/local/bin/
+```
+
+(macOS: `cadvm-aarch64-apple-darwin`; Windows: `cadvm-x86_64-pc-windows-msvc.exe`.)
+
+### From source
+
 Requires a recent stable Rust toolchain (tested on 1.96).
 
 ```bash

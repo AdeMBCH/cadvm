@@ -26,8 +26,18 @@ common material) via Open CASCADE, a **self-contained 3D viewer**, and an
 
 cadvm installs in two layers. The first is all most users need.
 
-**1. The `cadvm` binary** (version control + TUI) — pure Rust, runs on Linux,
-macOS and Windows. Needs a recent stable Rust toolchain:
+**1. The `cadvm` binary** (version control + TUI) — runs on Linux, macOS and
+Windows (verified in CI on all three).
+
+*Prebuilt binary (no Rust needed)* — download the one for your platform from the
+[latest release](https://github.com/AdeMBCH/cadvm/releases/latest), e.g. on Linux:
+
+```bash
+curl -L -o cadvm https://github.com/AdeMBCH/cadvm/releases/latest/download/cadvm-x86_64-unknown-linux-gnu
+chmod +x cadvm && sudo mv cadvm /usr/local/bin/
+```
+
+*Or build from source* (needs a recent stable Rust toolchain):
 
 ```bash
 cargo install --path crates/cadvm-cli      # installs `cadvm` into ~/.cargo/bin
@@ -330,7 +340,6 @@ Test fixtures live in [`tests/fixtures/`](tests/fixtures/).
 
 - Exact topological face correspondence (not just volumetric / heuristic).
 - A staging index and richer merge tooling.
-- Prebuilt binaries and multi-OS continuous integration.
 
 ## Contributing
 

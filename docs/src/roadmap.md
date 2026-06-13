@@ -23,5 +23,8 @@
 
 ## Next
 
+- Mesh-based geometric diff and 3D viewer for STL/OBJ (today they are versioned
+  with metadata only; the B-Rep volume/face diff applies to STEP/STP).
+
 - Exact topological face correspondence (not just volumetric / heuristic).
 - A staging index and richer merge tooling.

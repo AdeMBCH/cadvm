@@ -383,6 +383,14 @@ fn cmd_show(rev: &str) -> Result<()> {
                 println!("    top types: {}", top.join(", "));
             }
         }
+        if let Some(md) = &entry.mesh_metadata {
+            println!("    triangles: {}", opt_u64(md.triangles));
+            println!("    vertices: {}", opt_u64(md.vertices));
+            if let Some(b) = &md.bbox {
+                let s = b.size();
+                println!("    bbox: {:.2}×{:.2}×{:.2}", s[0], s[1], s[2]);
+            }
+        }
     }
     Ok(())
 }
@@ -437,21 +445,39 @@ fn print_diff(d: &ManifestDiff) {
                 f.raw_hash.0.short(),
                 f.raw_hash.1.short()
             );
-            println!(
-                "    lines: {} -> {}",
-                opt_u64(f.line_count.0),
-                opt_u64(f.line_count.1)
-            );
-            println!(
-                "    schema: {} -> {}",
-                opt_str(&f.schema.0),
-                opt_str(&f.schema.1)
-            );
-            println!(
-                "    entities: {} -> {}",
-                opt_u64(f.entity_count.0),
-                opt_u64(f.entity_count.1)
-            );
+            // STEP (B-Rep) metadata, only when present.
+            if f.line_count.0.is_some() || f.line_count.1.is_some() {
+                println!(
+                    "    lines: {} -> {}",
+                    opt_u64(f.line_count.0),
+                    opt_u64(f.line_count.1)
+                );
+            }
+            if f.schema.0.is_some() || f.schema.1.is_some() {
+                println!(
+                    "    schema: {} -> {}",
+                    opt_str(&f.schema.0),
+                    opt_str(&f.schema.1)
+                );
+                println!(
+                    "    entities: {} -> {}",
+                    opt_u64(f.entity_count.0),
+                    opt_u64(f.entity_count.1)
+                );
+            }
+            // Mesh (STL/OBJ) metadata, only when present.
+            if f.triangles.0.is_some() || f.triangles.1.is_some() {
+                println!(
+                    "    triangles: {} -> {}",
+                    opt_u64(f.triangles.0),
+                    opt_u64(f.triangles.1)
+                );
+                println!(
+                    "    vertices: {} -> {}",
+                    opt_u64(f.vertices.0),
+                    opt_u64(f.vertices.1)
+                );
+            }
         }
     }
 }

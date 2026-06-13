@@ -9,7 +9,8 @@ mkdir my-part && cd my-part
 cadvm init
 ```
 
-This creates a `.cadvm/` directory. cadvm tracks **`.step` and `.stp` files**
+This creates a `.cadvm/` directory. cadvm tracks **`.step`, `.stp`, `.stl` and
+`.obj` files**
 recursively from here (other files are ignored — see
 [Storage model](storage.md)).
 

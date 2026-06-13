@@ -74,21 +74,31 @@ fn snapshot_creates_commit() {
 }
 
 #[test]
-fn snapshot_tracks_only_step_and_stp() {
+fn snapshot_tracks_cad_formats_only() {
     let (_d, repo) = setup();
     write_file(&repo, "piece.step", CUBE_HOLE5);
     write_file(&repo, "plate.stp", TWO_HOLES);
     write_file(&repo, "notes.txt", "not a CAD file");
-    write_file(&repo, "mesh.stl", "solid foo\nendsolid foo\n");
+    write_file(
+        &repo,
+        "mesh.stl",
+        "solid foo\nfacet normal 0 0 1\nouter loop\nvertex 0 0 0\nvertex 1 0 0\nvertex 0 1 0\nendloop\nendfacet\nendsolid foo\n",
+    );
 
-    let out = snapshot::snapshot(&repo, "track step/stp only", ts(1)).unwrap();
-    assert_eq!(out.file_count, 2);
+    let out = snapshot::snapshot(&repo, "track CAD formats", ts(1)).unwrap();
+    // STEP, STP and STL are tracked; the plain text file is not.
+    assert_eq!(out.file_count, 3);
 
     let manifest = repo.head_manifest().unwrap();
     assert!(manifest.files.contains_key(Path::new("piece.step")));
     assert!(manifest.files.contains_key(Path::new("plate.stp")));
+    assert!(manifest.files.contains_key(Path::new("mesh.stl")));
     assert!(!manifest.files.contains_key(Path::new("notes.txt")));
-    assert!(!manifest.files.contains_key(Path::new("mesh.stl")));
+
+    // The STL carries mesh metadata (one triangle), not STEP metadata.
+    let stl = &manifest.files[Path::new("mesh.stl")];
+    assert!(stl.step_metadata.is_none());
+    assert_eq!(stl.mesh_metadata.as_ref().unwrap().triangles, Some(1));
 }
 
 #[test]

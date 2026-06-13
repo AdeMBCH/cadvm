@@ -4,13 +4,18 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
-/// CAD formats tracked by cadvm V1. Only textual STEP/STP files are supported;
-/// binary/mesh formats (STL, OBJ, native CAD) are explicitly out of scope.
+/// CAD formats tracked by cadvm.
+///
+/// STEP/STP are B-Rep (boundary representation) formats and support the full
+/// geometric diff. STL/OBJ are triangle-mesh formats: they are versioned with
+/// lightweight metadata, and get a mesh-based (not B-Rep) geometric diff.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum CadFormat {
     Step,
     Stp,
+    Stl,
+    Obj,
 }
 
 impl CadFormat {
@@ -20,6 +25,8 @@ impl CadFormat {
         match ext.as_str() {
             "step" => Some(CadFormat::Step),
             "stp" => Some(CadFormat::Stp),
+            "stl" => Some(CadFormat::Stl),
+            "obj" => Some(CadFormat::Obj),
             _ => None,
         }
     }
@@ -29,7 +36,19 @@ impl CadFormat {
         match self {
             CadFormat::Step => "step",
             CadFormat::Stp => "stp",
+            CadFormat::Stl => "stl",
+            CadFormat::Obj => "obj",
         }
+    }
+
+    /// Whether this is a B-Rep format (STEP/STP) — full geometric diff applies.
+    pub fn is_brep(self) -> bool {
+        matches!(self, CadFormat::Step | CadFormat::Stp)
+    }
+
+    /// Whether this is a triangle-mesh format (STL/OBJ).
+    pub fn is_mesh(self) -> bool {
+        matches!(self, CadFormat::Stl | CadFormat::Obj)
     }
 }
 
@@ -39,7 +58,7 @@ mod tests {
     use std::path::PathBuf;
 
     #[test]
-    fn detects_step_and_stp_case_insensitively() {
+    fn detects_tracked_formats_case_insensitively() {
         assert_eq!(
             CadFormat::from_path(&PathBuf::from("a.step")),
             Some(CadFormat::Step)
@@ -48,7 +67,21 @@ mod tests {
             CadFormat::from_path(&PathBuf::from("a.STP")),
             Some(CadFormat::Stp)
         );
-        assert_eq!(CadFormat::from_path(&PathBuf::from("a.stl")), None);
+        assert_eq!(
+            CadFormat::from_path(&PathBuf::from("m.STL")),
+            Some(CadFormat::Stl)
+        );
+        assert_eq!(
+            CadFormat::from_path(&PathBuf::from("m.obj")),
+            Some(CadFormat::Obj)
+        );
+        assert_eq!(CadFormat::from_path(&PathBuf::from("a.iges")), None);
         assert_eq!(CadFormat::from_path(&PathBuf::from("noext")), None);
+    }
+
+    #[test]
+    fn brep_vs_mesh() {
+        assert!(CadFormat::Step.is_brep() && !CadFormat::Step.is_mesh());
+        assert!(CadFormat::Stl.is_mesh() && !CadFormat::Stl.is_brep());
     }
 }

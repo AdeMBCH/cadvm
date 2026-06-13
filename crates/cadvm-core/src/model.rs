@@ -7,6 +7,7 @@ use cadvm_store::{BlobRef, ObjectId};
 use serde::{Deserialize, Serialize};
 
 use crate::format::CadFormat;
+use crate::mesh::MeshMetadata;
 use crate::step::StepMetadata;
 
 /// Current manifest schema version.
@@ -31,7 +32,9 @@ impl Author {
 }
 
 /// A single tracked file inside a [`Manifest`].
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+///
+/// (Not `Eq`: mesh metadata carries floating-point bounds.)
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FileEntry {
     /// Path relative to the repository root.
     pub path: PathBuf,
@@ -42,11 +45,16 @@ pub struct FileEntry {
     pub blob_ref: BlobRef,
     pub size_bytes: u64,
     pub line_count: Option<u64>,
+    /// B-Rep (STEP) metadata, when applicable.
+    #[serde(default)]
     pub step_metadata: Option<StepMetadata>,
+    /// Mesh (STL/OBJ) metadata, when applicable.
+    #[serde(default)]
+    pub mesh_metadata: Option<MeshMetadata>,
 }
 
 /// A point-in-time snapshot of every tracked file, keyed by relative path.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Manifest {
     pub version: u32,
     pub files: BTreeMap<PathBuf, FileEntry>,

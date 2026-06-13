@@ -11,7 +11,8 @@
 
 # cadvm — CAD Version Manager
 
-`cadvm` is a **local-first version manager for STEP/STP CAD files**. It brings
+`cadvm` is a **local-first version manager for CAD files** (STEP, STP, STL, OBJ).
+It brings
 Git-like workflows — snapshots, branches, diff, checkout, revert — to CAD data,
 with a content-addressed, deduplicated object store.
 
@@ -70,7 +71,8 @@ see the **[documentation](https://adembch.github.io/cadvm/)**.
 
 ## Features
 
-- Snapshots, history, branches, switch, revert, checkout and gc for STEP/STP files.
+- Snapshots, history, branches, switch, revert, checkout and gc for CAD files
+  (STEP/STP and STL/OBJ).
 - Content-addressed, deduplicated storage (BLAKE3 + 256 KiB chunks).
 - Lightweight STEP metadata (schema, entity counts, top entity types).
 - Geometric diff — added / removed / common volumes and a face-to-face diff (Open CASCADE).
@@ -126,7 +128,9 @@ Geometry actions (`g`, `v`) need the `cadvm-geom` helper (see
 | `cadvm geom-diff <rev_a> <rev_b>` | Geometric diff of modified STEP files (needs `cadvm-geom`). |
 | `cadvm view <rev_a> <rev_b>`   | Generate a standalone 3D HTML viewer of the diff (needs `cadvm-geom`). |
 
-Tracked formats: **`.step`** and **`.stp`** only. Hidden directories and
+Tracked formats: **`.step`**, **`.stp`** (B-Rep) and **`.stl`**, **`.obj`**
+(triangle mesh). STEP/STP get the full geometric diff; STL/OBJ are versioned with
+mesh metadata (triangle/vertex counts, bounding box). Hidden directories and
 the `.cadvm/` directory are skipped during scanning, as are paths matching
 `.cadvmignore` (see below).
 
@@ -337,6 +341,7 @@ Test fixtures live in [`tests/fixtures/`](tests/fixtures/).
 
 ## Roadmap
 
+- Mesh-based geometric diff + 3D viewer for STL/OBJ (currently metadata only).
 - A staging index and richer merge tooling.
 - Per-edge correspondence and freeform-surface matching beyond the analytic cases.
 

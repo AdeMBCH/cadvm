@@ -18,6 +18,10 @@ pub struct FileDiff {
     pub line_count: (Option<u64>, Option<u64>),
     pub schema: (Option<String>, Option<String>),
     pub entity_count: (Option<u64>, Option<u64>),
+    /// Mesh triangle counts (STL/OBJ), when applicable.
+    pub triangles: (Option<u64>, Option<u64>),
+    /// Mesh vertex counts (STL/OBJ), when applicable.
+    pub vertices: (Option<u64>, Option<u64>),
 }
 
 impl FileDiff {
@@ -30,6 +34,14 @@ impl FileDiff {
             a.step_metadata.as_ref().and_then(|m| m.entity_count),
             b.step_metadata.as_ref().and_then(|m| m.entity_count),
         );
+        let triangles = (
+            a.mesh_metadata.as_ref().and_then(|m| m.triangles),
+            b.mesh_metadata.as_ref().and_then(|m| m.triangles),
+        );
+        let vertices = (
+            a.mesh_metadata.as_ref().and_then(|m| m.vertices),
+            b.mesh_metadata.as_ref().and_then(|m| m.vertices),
+        );
         FileDiff {
             path: a.path.clone(),
             size_bytes: (a.size_bytes, b.size_bytes),
@@ -37,6 +49,8 @@ impl FileDiff {
             line_count: (a.line_count, b.line_count),
             schema,
             entity_count,
+            triangles,
+            vertices,
         }
     }
 }

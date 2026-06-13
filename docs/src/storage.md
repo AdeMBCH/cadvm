@@ -44,9 +44,9 @@ unreferenced objects.
 
 ## What is tracked
 
-cadvm tracks **`.step` and `.stp`** files only, recursively from the repository
-root. Skipped: the `.cadvm/` directory, hidden directories, and anything matching
-`.cadvmignore`.
+cadvm tracks **`.step`, `.stp`, `.stl` and `.obj`** files, recursively from the
+repository root. Skipped: the `.cadvm/` directory, hidden directories, and
+anything matching `.cadvmignore`.
 
 A `.cadvmignore` at the root uses a small pattern syntax:
 
@@ -67,8 +67,11 @@ instead of being re-read and re-hashed. The cache is a transparent optimization 
 a miss simply recomputes — and a snapshot warms it so the following `status` is a
 pure cache hit.
 
-## STEP metadata
+## File metadata
 
-cadvm does **not** parse geometry for the VCS. It scans STEP text to record:
-line count, `HEADER;`/`DATA;` sections, `FILE_SCHEMA`, the entity count, and the
-top 20 entity types. This feeds `show`, `log` and the metadata `diff`.
+cadvm does **not** parse geometry for the VCS — it surfaces cheap, useful
+figures that feed `show`, `log` and the metadata `diff`:
+
+- **STEP/STP**: line count, `HEADER;`/`DATA;` sections, `FILE_SCHEMA`, the entity
+  count, and the top 20 entity types.
+- **STL/OBJ**: triangle and vertex counts, and an axis-aligned bounding box.

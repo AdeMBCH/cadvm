@@ -5,6 +5,7 @@ use cadvm_store::ObjectId;
 use crate::config;
 use crate::error::Result;
 use crate::format::CadFormat;
+use crate::mesh;
 use crate::model::{CommitBody, FileEntry, Manifest};
 use crate::repo::{Head, Repository};
 use crate::step;
@@ -28,8 +29,13 @@ pub fn build_manifest(repo: &Repository) -> Result<Manifest> {
         let format = CadFormat::from_path(&rel).expect("scan only yields tracked formats");
         let blob_ref = repo.store().put_file_content(&content)?;
         let raw_hash = blob_ref.raw_hash.clone();
-        let line_count = Some(count_lines(&content));
-        let step_metadata = step::extract(&content);
+
+        // B-Rep (STEP) and mesh (STL/OBJ) carry different metadata.
+        let (line_count, step_metadata, mesh_metadata) = if format.is_brep() {
+            (Some(count_lines(&content)), step::extract(&content), None)
+        } else {
+            (None, None, mesh::extract(&content, format))
+        };
 
         let entry = FileEntry {
             path: rel.clone(),
@@ -39,6 +45,7 @@ pub fn build_manifest(repo: &Repository) -> Result<Manifest> {
             size_bytes: content.len() as u64,
             line_count,
             step_metadata,
+            mesh_metadata,
         };
         manifest.files.insert(rel, entry);
     }

@@ -136,7 +136,11 @@ function drawLayer(spec, mvp, rot){
   gl.bindBuffer(gl.ARRAY_BUFFER,b.pb); gl.enableVertexAttribArray(aPos); gl.vertexAttribPointer(aPos,3,gl.FLOAT,false,0,0);
   gl.bindBuffer(gl.ARRAY_BUFFER,b.nb); gl.enableVertexAttribArray(aNormal); gl.vertexAttribPointer(aNormal,3,gl.FLOAT,false,0,0);
   gl.uniform3fv(uColor, spec.color); gl.uniform1f(uAlpha, spec.alpha);
+  // Push 'removed' (old) faces slightly back so that where they are coplanar
+  // with unchanged/added (new) faces, the new ones win — avoids z-fighting.
+  if (spec.key === 'removed') { gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(1.0, 1.0); }
   gl.drawArrays(gl.TRIANGLES,0,b.count);
+  if (spec.key === 'removed') gl.disable(gl.POLYGON_OFFSET_FILL);
 }
 
 function draw(){

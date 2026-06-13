@@ -1,0 +1,55 @@
+// Generate the demo fixtures: two versions of the same part so the per-face
+// diff is easy to read (mostly unchanged, with one clear added feature).
+//
+//   block_v1.step : a 40x30x20 block with one Ø10 through-hole.
+//   block_v2.step : the same block with a SECOND Ø10 hole added.
+//
+// Not part of the build. Compile manually (needs Open CASCADE):
+//   g++ -std=c++17 -I/usr/include/opencascade tests/fixtures/generate-blocks.cpp \
+//       -o /tmp/genblocks -lTKSTEP -lTKXSBase -lTKBRep -lTKMath -lTKG2d -lTKG3d \
+//       -lTKGeomBase -lTKGeomAlgo -lTKTopAlgo -lTKPrim -lTKBO -lTKernel
+//   /tmp/genblocks tests/fixtures/block_v1.step tests/fixtures/block_v2.step
+
+#include <stdexcept>
+#include <string>
+
+#include <BRepAlgoAPI_Cut.hxx>
+#include <BRepPrimAPI_MakeBox.hxx>
+#include <BRepPrimAPI_MakeCylinder.hxx>
+#include <STEPControl_Writer.hxx>
+#include <TopoDS_Shape.hxx>
+#include <gp_Ax2.hxx>
+#include <gp_Dir.hxx>
+#include <gp_Pnt.hxx>
+
+static void write_step(const TopoDS_Shape& shape, const std::string& path) {
+    STEPControl_Writer writer;
+    if (writer.Transfer(shape, STEPControl_AsIs) != IFSelect_RetDone) {
+        throw std::runtime_error("STEP transfer failed for " + path);
+    }
+    if (writer.Write(path.c_str()) != IFSelect_RetDone) {
+        throw std::runtime_error("STEP write failed for " + path);
+    }
+}
+
+static TopoDS_Shape hole(double cx, double cy) {
+    // Ø10 vertical cylinder, taller than the block so it cuts all the way.
+    gp_Ax2 axis(gp_Pnt(cx, cy, -1.0), gp_Dir(0.0, 0.0, 1.0));
+    return BRepPrimAPI_MakeCylinder(axis, 5.0, 22.0).Shape();
+}
+
+int main(int argc, char** argv) {
+    if (argc != 3) {
+        return 2;
+    }
+    const TopoDS_Shape block = BRepPrimAPI_MakeBox(40.0, 30.0, 20.0).Shape();
+
+    // v1: one hole near the left end.
+    const TopoDS_Shape v1 = BRepAlgoAPI_Cut(block, hole(12.0, 15.0));
+    // v2: v1 plus a second hole near the right end.
+    const TopoDS_Shape v2 = BRepAlgoAPI_Cut(v1, hole(28.0, 15.0));
+
+    write_step(v1, argv[1]);
+    write_step(v2, argv[2]);
+    return 0;
+}

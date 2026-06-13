@@ -1,8 +1,12 @@
 # Live demo
 
 Below is a **real `cadvm view` output** — the geometric diff between two versions
-of a part (`bloc1 → bloc2`), rendered live in your browser. Nothing is installed
-or sent anywhere; the whole 3D scene is embedded in the page.
+of the same block: the first has one hole, the second has **a second hole added**.
+It is rendered live in your browser; nothing is installed or sent anywhere, the
+whole 3D scene is embedded in the page.
+
+Most of the block is **grey** (unchanged); the faces touched by the new hole show
+up in **green** (added) and **red** (removed).
 
 - **Drag** to rotate · **scroll** to zoom
 - Each **face** is colored by how it changed: **grey** = unchanged, **green** =

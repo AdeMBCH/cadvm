@@ -15,7 +15,7 @@ including the ones *inside* the part:
 Drag to rotate, scroll to zoom, and toggle any layer in the panel.
 
 <iframe
-  src="demo-viewer.html"
+  src="demo-viewer.html?v=3"
   title="cadvm — interactive 3D geometric diff"
   width="100%"
   height="560"
@@ -24,7 +24,7 @@ Drag to rotate, scroll to zoom, and toggle any layer in the panel.
 </iframe>
 
 <p>
-  <a href="demo-viewer.html" target="_blank">↗ Open the demo full-screen</a>
+  <a href="demo-viewer.html?v=3" target="_blank">↗ Open the demo full-screen</a>
 </p>
 
 This page is exactly what `cadvm view HEAD~1 HEAD` produces — a single,

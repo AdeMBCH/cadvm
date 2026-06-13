@@ -5,8 +5,8 @@ of a part (`bloc1 → bloc2`), rendered live in your browser. Nothing is install
 or sent anywhere; the whole 3D scene is embedded in the page.
 
 - **Drag** to rotate · **scroll** to zoom
-- **Green** = material *added* in the new version · **Red** = *removed* · the
-  translucent grey body is the part itself (context)
+- Each **face** is colored by how it changed: **grey** = unchanged, **green** =
+  added in the new version, **red** = removed (present only in the old one)
 - Toggle any layer with the checkboxes (top-left)
 
 <iframe

@@ -429,8 +429,9 @@ fn geom_diff_on_real_solids_when_helper_available() {
     assert!(mesh.is_ok());
     assert!(mesh.total_triangles() > 0);
     let layers = mesh.layers.unwrap();
-    assert!(layers.shape_a.as_ref().unwrap().triangle_count() > 0);
-    assert!(layers.shape_b.as_ref().unwrap().triangle_count() > 0);
+    // The two blocs differ, so there are added and removed faces.
+    assert!(layers.added.triangle_count() > 0);
+    assert!(layers.removed.triangle_count() > 0);
 }
 
 #[test]

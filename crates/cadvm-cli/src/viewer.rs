@@ -55,13 +55,11 @@ const TEMPLATE: &str = r##"<!DOCTYPE html>
 <script>
 const DATA = /*__DATA__*/null;
 
-// key, label, rgb color, alpha, default-on. Context shapes are translucent.
+// key, label, rgb color, alpha, default-on. Faces are classified per face.
 const LAYERS = [
-  {key:'shape_b', label:'context B (new)', color:[0.55,0.60,0.70], alpha:0.16, on:true},
-  {key:'shape_a', label:'context A (old)', color:[0.70,0.62,0.50], alpha:0.16, on:false},
-  {key:'added',   label:'added (B−A)',     color:[0.22,0.78,0.35], alpha:1.0,  on:true},
-  {key:'removed', label:'removed (A−B)',   color:[0.88,0.28,0.23], alpha:1.0,  on:true},
-  {key:'common',  label:'common (A∩B)',    color:[0.60,0.62,0.66], alpha:1.0,  on:false},
+  {key:'unchanged', label:'unchanged faces', color:[0.60,0.62,0.66], alpha:1.0, on:true},
+  {key:'added',     label:'added faces',     color:[0.22,0.78,0.35], alpha:1.0, on:true},
+  {key:'removed',   label:'removed faces',   color:[0.88,0.28,0.23], alpha:1.0, on:true},
 ];
 
 const canvas = document.getElementById('c');

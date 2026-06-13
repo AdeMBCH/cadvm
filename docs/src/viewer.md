@@ -10,12 +10,14 @@ it in any modern browser.
 
 ## What you see
 
-- The **full parts A and B** as a *translucent context* (B shown by default).
-- The boolean pieces opaque on top:
-  - **common = grey**, **added = green**, **removed = red**.
+Each **face** of the part is colored by how it changed:
 
-This shows *where* material was added or removed within the whole part, not just
-isolated fragments. Each layer can be toggled in the side panel.
+- **grey** — unchanged (the face exists in both versions);
+- **green** — added (a face of the new version with no match in the old one);
+- **red** — removed (a face of the old version, gone in the new one).
+
+So you see exactly *which faces* changed on the real part. Each layer can be
+toggled in the side panel.
 
 **Controls:** drag to rotate · scroll to zoom · toggle layers with the checkboxes.
 
@@ -32,7 +34,8 @@ You can also launch it straight from the [TUI](tui.md) with the `v` key.
 
 ## Under the hood
 
-`cadvm-geom mesh a.step b.step out.json` tessellates the boolean pieces and the
-full shapes (`BRepMesh_IncrementalMesh`) into flat-shaded triangle meshes. cadvm
+`cadvm-geom mesh a.step b.step out.json` classifies each face (unchanged / added
+/ removed) and tessellates them (`BRepMesh_IncrementalMesh`) into flat-shaded,
+per-color triangle meshes. cadvm
 embeds that JSON into the HTML template (`cadvm-cli/src/viewer.rs`) and the WebGL
 code renders it with per-layer colors and transparency.

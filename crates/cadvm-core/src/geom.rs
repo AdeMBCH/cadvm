@@ -120,15 +120,12 @@ impl Mesh {
     }
 }
 
-/// The mesh layers of a geometric diff: the full input shapes (context) and the
-/// three colored boolean pieces.
+/// The mesh layers of a geometric diff, classified per face: the faces of the
+/// new part that are unchanged or added, and the faces of the old part that were
+/// removed.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MeshLayers {
-    #[serde(default)]
-    pub shape_a: Option<Mesh>,
-    #[serde(default)]
-    pub shape_b: Option<Mesh>,
-    pub common: Mesh,
+    pub unchanged: Mesh,
     pub added: Mesh,
     pub removed: Mesh,
 }
@@ -153,7 +150,7 @@ impl MeshDiff {
     /// Total triangle count across all layers.
     pub fn total_triangles(&self) -> usize {
         self.layers.as_ref().map_or(0, |l| {
-            l.common.triangle_count() + l.added.triangle_count() + l.removed.triangle_count()
+            l.unchanged.triangle_count() + l.added.triangle_count() + l.removed.triangle_count()
         })
     }
 }

@@ -220,40 +220,41 @@ struct Mesh {
     std::vector<float> normals;
 };
 
-void tessellate(const TopoDS_Shape& shape, Mesh& mesh) {
+// Run OCCT's mesher over a shape so every face gets a triangulation.
+void mesh_shape(const TopoDS_Shape& shape) {
     if (shape.IsNull()) return;
     // Linear/angular deflection tuned for typical mm-scale parts.
     BRepMesh_IncrementalMesh mesher(shape, 0.4, Standard_False, 0.4, Standard_True);
     mesher.Perform();
+}
 
-    for (TopExp_Explorer ex(shape, TopAbs_FACE); ex.More(); ex.Next()) {
-        TopoDS_Face face = TopoDS::Face(ex.Current());
-        TopLoc_Location loc;
-        Handle(Poly_Triangulation) tri = BRep_Tool::Triangulation(face, loc);
-        if (tri.IsNull()) continue;
-        const gp_Trsf& trsf = loc.Transformation();
-        const bool reversed = (face.Orientation() == TopAbs_REVERSED);
+// Append one (already-meshed) face's triangles to `mesh`, flat-shaded.
+void append_face(const TopoDS_Face& face, Mesh& mesh) {
+    TopLoc_Location loc;
+    Handle(Poly_Triangulation) tri = BRep_Tool::Triangulation(face, loc);
+    if (tri.IsNull()) return;
+    const gp_Trsf& trsf = loc.Transformation();
+    const bool reversed = (face.Orientation() == TopAbs_REVERSED);
 
-        for (Standard_Integer i = 1; i <= tri->NbTriangles(); ++i) {
-            Standard_Integer n1, n2, n3;
-            tri->Triangle(i).Get(n1, n2, n3);
-            if (reversed) std::swap(n2, n3);
-            const gp_Pnt p1 = tri->Node(n1).Transformed(trsf);
-            const gp_Pnt p2 = tri->Node(n2).Transformed(trsf);
-            const gp_Pnt p3 = tri->Node(n3).Transformed(trsf);
+    for (Standard_Integer i = 1; i <= tri->NbTriangles(); ++i) {
+        Standard_Integer n1, n2, n3;
+        tri->Triangle(i).Get(n1, n2, n3);
+        if (reversed) std::swap(n2, n3);
+        const gp_Pnt p1 = tri->Node(n1).Transformed(trsf);
+        const gp_Pnt p2 = tri->Node(n2).Transformed(trsf);
+        const gp_Pnt p3 = tri->Node(n3).Transformed(trsf);
 
-            gp_Vec normal(gp_Vec(p1, p2).Crossed(gp_Vec(p1, p3)));
-            if (normal.Magnitude() > 1e-12) normal.Normalize();
+        gp_Vec normal(gp_Vec(p1, p2).Crossed(gp_Vec(p1, p3)));
+        if (normal.Magnitude() > 1e-12) normal.Normalize();
 
-            const gp_Pnt pts[3] = {p1, p2, p3};
-            for (const gp_Pnt& p : pts) {
-                mesh.positions.push_back(static_cast<float>(p.X()));
-                mesh.positions.push_back(static_cast<float>(p.Y()));
-                mesh.positions.push_back(static_cast<float>(p.Z()));
-                mesh.normals.push_back(static_cast<float>(normal.X()));
-                mesh.normals.push_back(static_cast<float>(normal.Y()));
-                mesh.normals.push_back(static_cast<float>(normal.Z()));
-            }
+        const gp_Pnt pts[3] = {p1, p2, p3};
+        for (const gp_Pnt& p : pts) {
+            mesh.positions.push_back(static_cast<float>(p.X()));
+            mesh.positions.push_back(static_cast<float>(p.Y()));
+            mesh.positions.push_back(static_cast<float>(p.Z()));
+            mesh.normals.push_back(static_cast<float>(normal.X()));
+            mesh.normals.push_back(static_cast<float>(normal.Y()));
+            mesh.normals.push_back(static_cast<float>(normal.Z()));
         }
     }
 }
@@ -278,16 +279,41 @@ void write_mesh(std::ostream& out, const Mesh& m) {
 int run_mesh(const std::string& file_a, const std::string& file_b, const std::string& out_path) {
     TopoDS_Shape a = read_step(file_a);
     TopoDS_Shape b = read_step(file_b);
-    const TopoDS_Shape common = boolean_common(a, b);
-    const TopoDS_Shape removed = boolean_cut(a, b);
-    const TopoDS_Shape added = boolean_cut(b, a);
+    mesh_shape(a);
+    mesh_shape(b);
 
-    Mesh m_shape_a, m_shape_b, m_common, m_added, m_removed;
-    tessellate(a, m_shape_a);
-    tessellate(b, m_shape_b);
-    tessellate(common, m_common);
-    tessellate(added, m_added);
-    tessellate(removed, m_removed);
+    // Per-face classification by geometric signature: a face of B that matches a
+    // face of A is "unchanged"; otherwise it is "added". A face of A with no
+    // match in B is "removed". This colors the real faces of the part rather
+    // than abstract boolean solids.
+    Mesh m_unchanged, m_added, m_removed;
+
+    std::map<std::string, int> budget_a;
+    face_histogram(a, budget_a);
+    for (TopExp_Explorer ex(b, TopAbs_FACE); ex.More(); ex.Next()) {
+        const TopoDS_Face face = TopoDS::Face(ex.Current());
+        const std::string sig = face_signature(face);
+        auto it = budget_a.find(sig);
+        if (it != budget_a.end() && it->second > 0) {
+            it->second--;
+            append_face(face, m_unchanged);
+        } else {
+            append_face(face, m_added);
+        }
+    }
+
+    std::map<std::string, int> budget_b;
+    face_histogram(b, budget_b);
+    for (TopExp_Explorer ex(a, TopAbs_FACE); ex.More(); ex.Next()) {
+        const TopoDS_Face face = TopoDS::Face(ex.Current());
+        const std::string sig = face_signature(face);
+        auto it = budget_b.find(sig);
+        if (it != budget_b.end() && it->second > 0) {
+            it->second--;  // common face, already shown via B's "unchanged"
+        } else {
+            append_face(face, m_removed);
+        }
+    }
 
     std::ofstream out(out_path);
     if (!out) throw std::runtime_error("cannot open output file: " + out_path);
@@ -304,12 +330,8 @@ int run_mesh(const std::string& file_a, const std::string& file_b, const std::st
         out << "{\"min\":[" << xmin << "," << ymin << "," << zmin << "],\"max\":[" << xmax << ","
             << ymax << "," << zmax << "]}";
     }
-    out << ",\"layers\":{\"shape_a\":";
-    write_mesh(out, m_shape_a);
-    out << ",\"shape_b\":";
-    write_mesh(out, m_shape_b);
-    out << ",\"common\":";
-    write_mesh(out, m_common);
+    out << ",\"layers\":{\"unchanged\":";
+    write_mesh(out, m_unchanged);
     out << ",\"added\":";
     write_mesh(out, m_added);
     out << ",\"removed\":";

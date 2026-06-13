@@ -198,15 +198,10 @@ print a clear hint if `cadvm-geom` is not found).
 ### 3D viewer
 
 `cadvm view` turns the geometric diff into a **single self-contained HTML file**
-with a hand-written WebGL renderer (no CDN, no server, fully offline). Layers can
-be toggled; drag to rotate, scroll to zoom:
-
-- the **full parts A and B** as a *translucent context* (B shown by default);
-- the boolean pieces opaque on top — **common = grey, added = green,
-  removed = red**.
-
-This shows *where* material was added/removed within the whole part, not just
-isolated fragments.
+with a hand-written WebGL renderer (no CDN, no server, fully offline). Each
+**face** of the part is colored by how it changed — **grey = unchanged,
+green = added, red = removed** — and each layer can be toggled; drag to rotate,
+scroll to zoom.
 
 ```bash
 cadvm view HEAD~1 HEAD                 # if exactly one STEP file changed
@@ -215,9 +210,8 @@ cadvm view HEAD~1 HEAD --open          # also open it in the browser
 cadvm view HEAD~1 HEAD -o diff.html    # choose the output path
 ```
 
-Under the hood the `cadvm-geom mesh` subcommand tessellates the boolean pieces
-(`BRepMesh_IncrementalMesh`) into triangle meshes, which the viewer embeds and
-draws.
+Under the hood the `cadvm-geom mesh` subcommand classifies each face and
+tessellates it (`BRepMesh_IncrementalMesh`), which the viewer embeds and draws.
 
 ### Working-tree safety
 

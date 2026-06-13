@@ -1,11 +1,12 @@
 //! Working-tree status: compare the working tree against a manifest.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 
 use cadvm_store::ObjectId;
 
 use crate::error::Result;
+use crate::index::HashCache;
 use crate::model::Manifest;
 use crate::repo::Repository;
 use crate::worktree;
@@ -40,12 +41,18 @@ pub fn working_tree_status(repo: &Repository) -> Result<WorkingTreeStatus> {
 pub fn status_against(repo: &Repository, manifest: &Manifest) -> Result<WorkingTreeStatus> {
     let branch = repo.current_branch()?;
 
-    // Hash every tracked-format file currently on disk.
+    // Hash every tracked-format file currently on disk, reusing the size+mtime
+    // cache so unchanged (often large) files are not re-read.
+    let mut cache = HashCache::load(repo);
     let mut working: BTreeMap<PathBuf, ObjectId> = BTreeMap::new();
+    let mut seen: BTreeSet<PathBuf> = BTreeSet::new();
     for rel in worktree::scan_step_files(repo)? {
-        let hash = worktree::hash_working_file(repo, &rel)?;
+        let hash = cache.hash(repo, &rel)?;
+        seen.insert(rel.clone());
         working.insert(rel, hash);
     }
+    cache.retain(&seen);
+    let _ = cache.save(repo); // best-effort: a cache write must never fail status
 
     let mut status = WorkingTreeStatus {
         branch,

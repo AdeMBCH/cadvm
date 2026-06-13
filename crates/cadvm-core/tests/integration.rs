@@ -354,6 +354,28 @@ fn store_is_chunk_only_no_raw_blob() {
 }
 
 #[test]
+fn hash_cache_reuses_and_invalidates() {
+    use cadvm_core::index::HashCache;
+    let (_d, repo) = setup();
+    write_file(&repo, "piece.step", CUBE_HOLE5);
+
+    let mut cache = HashCache::load(&repo);
+    let h1 = cache.hash(&repo, Path::new("piece.step")).unwrap();
+    let h2 = cache.hash(&repo, Path::new("piece.step")).unwrap();
+    assert_eq!(h1, h2, "repeat hash is stable");
+
+    // Different content (and size) invalidates the cache.
+    write_file(&repo, "piece.step", CUBE_HOLE8);
+    let h3 = cache.hash(&repo, Path::new("piece.step")).unwrap();
+    assert_ne!(h1, h3);
+
+    // Persisted and reloaded cache stays consistent.
+    cache.save(&repo).unwrap();
+    let mut reloaded = HashCache::load(&repo);
+    assert_eq!(reloaded.hash(&repo, Path::new("piece.step")).unwrap(), h3);
+}
+
+#[test]
 fn config_records_commit_author() {
     use cadvm_core::config::{self, Config};
     let (_d, repo) = setup();

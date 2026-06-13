@@ -80,7 +80,10 @@ pub fn read_working_file(repo: &Repository, rel: &Path) -> Result<Vec<u8>> {
     std::fs::read(&path).map_err(|e| CoreError::io(&path, e))
 }
 
-/// Hash a working-tree file by content (level-1 raw hash).
+/// Hash a working-tree file by content (level-1 raw hash), streaming the file in
+/// fixed blocks so memory stays constant even for very large STEP files.
 pub fn hash_working_file(repo: &Repository, rel: &Path) -> Result<ObjectId> {
-    Ok(ObjectId::hash_bytes(&read_working_file(repo, rel)?))
+    let path = abs_path(repo, rel);
+    let file = std::fs::File::open(&path).map_err(|e| CoreError::io(&path, e))?;
+    ObjectId::hash_reader(std::io::BufReader::new(file)).map_err(|e| CoreError::io(&path, e))
 }

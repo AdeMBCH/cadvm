@@ -1,6 +1,13 @@
 //! Deduplication guarantees for the content-addressed store.
 
-use cadvm_store::{Category, Store, CHUNK_SIZE};
+use cadvm_store::{Category, ObjectId, Store, CHUNK_SIZE};
+
+#[test]
+fn hash_reader_matches_hash_bytes() {
+    let data = vec![0x42u8; CHUNK_SIZE * 3 + 7]; // spans several read blocks
+    let streamed = ObjectId::hash_reader(&data[..]).unwrap();
+    assert_eq!(streamed, ObjectId::hash_bytes(&data));
+}
 
 fn temp_store() -> (tempfile::TempDir, Store) {
     let dir = tempfile::tempdir().unwrap();

@@ -17,6 +17,7 @@ pub mod format;
 pub mod gc;
 pub mod geom;
 pub mod ignore;
+pub mod index;
 pub mod model;
 pub mod repo;
 pub mod revision;

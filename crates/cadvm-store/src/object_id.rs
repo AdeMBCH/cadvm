@@ -32,6 +32,20 @@ impl ObjectId {
         ObjectId::from_hash(&blake3::hash(bytes))
     }
 
+    /// Hash a stream incrementally (constant memory), e.g. a large file.
+    pub fn hash_reader<R: std::io::Read>(mut reader: R) -> std::io::Result<Self> {
+        let mut hasher = blake3::Hasher::new();
+        let mut buf = [0u8; 64 * 1024];
+        loop {
+            let n = reader.read(&mut buf)?;
+            if n == 0 {
+                break;
+            }
+            hasher.update(&buf[..n]);
+        }
+        Ok(ObjectId::from_hash(&hasher.finalize()))
+    }
+
     /// The lowercase hex digest, without the algorithm prefix.
     pub fn hex(&self) -> &str {
         &self.hex

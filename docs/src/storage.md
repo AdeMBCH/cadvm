@@ -12,7 +12,7 @@ A repository lives entirely in `.cadvm/`:
 ├── refs/heads/<branch>   # each file holds the branch's tip commit id
 ├── HEAD                  # "ref: refs/heads/main" or a detached commit id
 ├── config.json           # user.name / user.email and other settings
-├── index.json            # reserved for a future staging area
+├── index.json            # size+mtime hash cache (speeds up status)
 └── tmp/                  # scratch space for atomic writes
 ```
 
@@ -56,6 +56,16 @@ A `.cadvmignore` at the root uses a small pattern syntax:
 build/           # a directory and everything beneath it
 /secret/old.step # leading "/" anchors to the repo root
 ```
+
+## Performance
+
+Working files are **hashed in a streaming fashion** (fixed-size blocks), so even
+very large STEP files are processed with constant memory. A **hash cache** in
+`index.json` records each file's size, modification time and content hash; on the
+next `status` an unchanged file (same size + mtime) reuses its cached hash
+instead of being re-read and re-hashed. The cache is a transparent optimization —
+a miss simply recomputes — and a snapshot warms it so the following `status` is a
+pure cache hit.
 
 ## STEP metadata
 

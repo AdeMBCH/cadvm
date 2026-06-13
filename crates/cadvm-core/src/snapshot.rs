@@ -55,6 +55,16 @@ pub fn snapshot(repo: &Repository, message: &str, timestamp_unix: i64) -> Result
     let file_count = manifest.file_count();
     let manifest_id = repo.write_manifest(&manifest)?;
 
+    // Warm the hash cache so the next `status` is a cache hit (no re-hashing).
+    let mut cache = crate::index::HashCache::load(repo);
+    let mut tracked = std::collections::BTreeSet::new();
+    for (rel, entry) in &manifest.files {
+        let _ = cache.record(repo, rel, entry.raw_hash.clone());
+        tracked.insert(rel.clone());
+    }
+    cache.retain(&tracked);
+    let _ = cache.save(repo);
+
     let parents = match repo.head_commit_id()? {
         Some(parent) => vec![parent],
         None => Vec::new(),

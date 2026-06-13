@@ -269,7 +269,7 @@ A repository lives in `.cadvm/`:
 │   └── commits/      # serialized commits
 ├── refs/heads/<branch>   # each file holds the branch's tip commit id
 ├── HEAD                  # "ref: refs/heads/main" or a detached commit id
-├── index.json            # reserved for a future staging area
+├── index.json            # size+mtime hash cache (speeds up status)
 └── tmp/                  # scratch space for atomic writes
 ```
 

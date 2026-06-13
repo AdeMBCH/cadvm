@@ -12,24 +12,58 @@
 //! serialized `manifests` and `commits`. Because addressing is purely
 //! content-based, writing the same bytes twice is automatically deduplicated.
 //!
-//! File content is stored **chunk-only** (V2): a tracked file is split into
-//! fixed 256 KiB chunks (the `chunks` category) and reconstructed from them; the
-//! whole-file hash is kept as an identity but the full file is not duplicated as
-//! a standalone blob. The `blobs` category therefore holds only legacy V1
-//! objects, which `gc` reclaims.
+//! File content is stored **chunk-only**: a tracked file is split into fixed
+//! 256 KiB chunks (the `chunks` category) and reconstructed from them; the
+//! whole-file hash is kept as an identity rather than stored as a standalone
+//! blob. The `blobs` category is therefore unused by default and reclaimable by
+//! `gc`.
 //!
 //! Writes are atomic: bytes are streamed to a temp file inside the object
 //! directory and then `rename`d into place, so a crash can never leave a
 //! partially written (and therefore corrupt) object.
+//!
+//! Stored objects are gzip-compressed on disk (STEP is text and compresses
+//! several-fold). The object id is the hash of the *uncompressed* content, so
+//! deduplication is unaffected, and reads transparently pass through legacy
+//! objects written before compression existed.
 
 mod object_id;
 
 pub use object_id::{ObjectId, ObjectIdParseError, ALGO_PREFIX};
 
-use std::io::Write;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
+use flate2::read::GzDecoder;
+use flate2::write::GzEncoder;
+use flate2::Compression;
 use serde::{Deserialize, Serialize};
+
+/// gzip magic bytes, used to tell compressed objects from legacy raw ones.
+const GZIP_MAGIC: [u8; 2] = [0x1f, 0x8b];
+
+/// Compress bytes for on-disk storage (gzip, pure-Rust backend).
+fn compress(bytes: &[u8]) -> std::io::Result<Vec<u8>> {
+    let mut enc = GzEncoder::new(
+        Vec::with_capacity(bytes.len() / 2 + 16),
+        Compression::default(),
+    );
+    enc.write_all(bytes)?;
+    enc.finish()
+}
+
+/// Decompress a stored object, transparently passing through legacy objects that
+/// were written before compression existed (detected by the absence of the gzip
+/// magic — STEP text, JSON and chunk boundaries never start with `1f 8b`).
+fn maybe_decompress(bytes: Vec<u8>) -> std::io::Result<Vec<u8>> {
+    if bytes.len() >= 2 && bytes[0] == GZIP_MAGIC[0] && bytes[1] == GZIP_MAGIC[1] {
+        let mut out = Vec::new();
+        GzDecoder::new(&bytes[..]).read_to_end(&mut out)?;
+        Ok(out)
+    } else {
+        Ok(bytes)
+    }
+}
 
 /// Fixed chunk size used by level-2 deduplication: 256 KiB.
 pub const CHUNK_SIZE: usize = 256 * 1024;
@@ -162,9 +196,13 @@ impl Store {
         let parent = dest.parent().expect("object path always has a parent");
         std::fs::create_dir_all(parent).map_err(|e| io_err(parent, e))?;
 
+        // Objects are gzip-compressed on disk (STEP text compresses well). The
+        // id is the hash of the *uncompressed* content, so dedup is unaffected.
+        let data = compress(bytes).map_err(|e| io_err(parent, e))?;
+
         // Atomic write: temp file in the same directory, then rename into place.
         let mut tmp = tempfile::NamedTempFile::new_in(parent).map_err(|e| io_err(parent, e))?;
-        tmp.write_all(bytes).map_err(|e| io_err(parent, e))?;
+        tmp.write_all(&data).map_err(|e| io_err(parent, e))?;
         tmp.flush().map_err(|e| io_err(parent, e))?;
         tmp.persist(&dest).map_err(|e| io_err(&dest, e.error))?;
         Ok(id)
@@ -179,7 +217,7 @@ impl Store {
     pub fn get(&self, category: Category, id: &ObjectId) -> Result<Vec<u8>> {
         let path = self.object_path(category, id);
         match std::fs::read(&path) {
-            Ok(bytes) => Ok(bytes),
+            Ok(bytes) => maybe_decompress(bytes).map_err(|e| io_err(&path, e)),
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
                 Err(StoreError::NotFound(id.clone()))
             }
@@ -210,16 +248,12 @@ impl Store {
 
     /// Write a file's content into the store, producing a [`BlobRef`].
     ///
-    /// **V2 chunk-only storage.** The file is split into fixed 256 KiB chunks,
-    /// each stored content-addressed so identical chunks across files/versions
-    /// are shared. `raw_hash` is the BLAKE3 hash of the *whole* file and serves
-    /// purely as a content identity (used for dedup keys and status comparisons)
-    /// — the full file is **not** stored as a standalone blob, so there is no
-    /// on-disk duplication between the raw blob and its chunks.
-    ///
-    /// This is backward compatible with repositories written by V1 (which stored
-    /// both): V1 always wrote the chunks too, so reconstruction still works, and
-    /// `gc --prune` reclaims the now-redundant raw blobs.
+    /// The file is split into fixed 256 KiB chunks, each stored content-addressed
+    /// so identical chunks across files/versions are shared. `raw_hash` is the
+    /// BLAKE3 hash of the *whole* file and serves purely as a content identity
+    /// (used for dedup keys and status comparisons) — the full file is **not**
+    /// stored as a standalone blob, so there is no on-disk duplication between a
+    /// raw blob and its chunks.
     pub fn put_file_content(&self, content: &[u8]) -> Result<BlobRef> {
         let raw_hash = ObjectId::hash_bytes(content);
 
@@ -243,7 +277,7 @@ impl Store {
     }
 
     /// Reconstruct a file's content from a [`BlobRef`] by concatenating its
-    /// chunks (the V2 reconstruction path).
+    /// chunks.
     pub fn read_file_content(&self, blob_ref: &BlobRef) -> Result<Vec<u8>> {
         self.read_file_content_from_chunks(blob_ref)
     }

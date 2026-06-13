@@ -23,6 +23,39 @@ fn object_store_deduplicates_identical_blobs() {
 }
 
 #[test]
+fn objects_are_compressed_on_disk() {
+    let (dir, store) = temp_store();
+    // Highly compressible, STEP-like text well above one filesystem block.
+    let content = "#1 = CARTESIAN_POINT('', (0.0, 0.0, 0.0));\n".repeat(4000);
+    let bytes = content.as_bytes();
+
+    let id = store.put_bytes(bytes).unwrap();
+
+    // Round-trips to the exact original.
+    assert_eq!(store.get_bytes(&id).unwrap(), bytes);
+
+    // On disk the object is gzip (magic 1f 8b) and much smaller than the input.
+    let path = dir
+        .path()
+        .join("objects/blobs")
+        .join(&id.hex()[0..2])
+        .join(&id.hex()[2..4])
+        .join(id.hex());
+    let on_disk = std::fs::read(&path).unwrap();
+    assert_eq!(
+        &on_disk[0..2],
+        &[0x1f, 0x8b],
+        "stored object should be gzip"
+    );
+    assert!(
+        on_disk.len() < bytes.len() / 4,
+        "expected strong compression: {} vs {}",
+        on_disk.len(),
+        bytes.len()
+    );
+}
+
+#[test]
 fn chunk_store_deduplicates_identical_chunks() {
     let (_d, store) = temp_store();
 

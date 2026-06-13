@@ -136,7 +136,7 @@ pub struct CheckoutOutcome {
 }
 
 /// Restore the working tree to a revision **without moving the current branch**
-/// (V1 "restore-like" checkout). HEAD stays attached to its branch.
+/// (a "restore-like" checkout). HEAD stays attached to its branch.
 ///
 /// If `paths` is non-empty, only those files are restored from the revision
 /// (and nothing is deleted); each must exist in that revision.
@@ -217,7 +217,7 @@ pub struct RevertOutcome {
 
 /// Revert HEAD: create a new commit that restores the state of HEAD's parent.
 ///
-/// V1 only supports reverting HEAD itself. Refuses a dirty working tree unless
+/// Only reverting HEAD itself is supported. Refuses a dirty working tree unless
 /// `force`.
 pub fn revert(
     repo: &Repository,

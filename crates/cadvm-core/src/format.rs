@@ -1,4 +1,4 @@
-//! Supported CAD file formats for V1.
+//! Supported CAD file formats.
 
 use std::path::Path;
 

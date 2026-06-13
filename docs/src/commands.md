@@ -6,7 +6,7 @@ repository discovered by walking up from the current directory.
 | Command | Description |
 |---------|-------------|
 | `cadvm init` | Create a `.cadvm/` repository in the current directory. |
-| `cadvm snapshot -m "msg"` | Record a snapshot (commit) of all tracked STEP/STP files. |
+| `cadvm snapshot -m "msg"` | Record a snapshot (commit) of all tracked CAD files (STEP/STP/STL/OBJ). |
 | `cadvm status` | Show new / modified / deleted files vs. HEAD. |
 | `cadvm log` | Show the commit history of HEAD. |
 | `cadvm show [<rev>]` | Show one commit's details and per-file metadata. |
@@ -18,7 +18,7 @@ repository discovered by walking up from the current directory.
 | `cadvm switch <name>` | Switch branches, restoring their files. |
 | `cadvm revert <rev>` | Create a commit that restores HEAD's parent state. |
 | `cadvm gc [--dry-run \| --prune]` | Report / delete unreferenced objects. |
-| `cadvm geom-diff <a> <b>` | Geometric diff of modified STEP files. |
+| `cadvm geom-diff <a> <b>` | Geometric diff of modified files (STEP via OCCT; STL/OBJ pure Rust). |
 | `cadvm view <a> <b>` | Generate a standalone 3D HTML viewer of the diff. |
 | `cadvm ui` | Interactive full-screen terminal dashboard. |
 | `cadvm config [<key>] [<value>]` | Get / set / list config (e.g. `user.name`). |

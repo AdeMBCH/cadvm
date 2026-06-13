@@ -24,7 +24,7 @@ toggled in the side panel.
 ## Options
 
 ```bash
-cadvm view HEAD~1 HEAD                 # if exactly one STEP file changed
+cadvm view HEAD~1 HEAD                 # if exactly one file changed
 cadvm view HEAD~1 HEAD -- piece.step   # pick the file when several changed
 cadvm view HEAD~1 HEAD -o diff.html    # choose the output path
 cadvm view HEAD~1 HEAD --open          # also open in the default browser

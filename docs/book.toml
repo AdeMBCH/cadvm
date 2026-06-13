@@ -1,7 +1,7 @@
 [book]
 title = "cadvm — CAD Version Manager"
 authors = ["cadvm contributors"]
-description = "Local-first version control for STEP/STP CAD files, with geometric diff and a 3D viewer."
+description = "Local-first version control for CAD files (STEP, STP, STL, OBJ), with geometric diff and a 3D viewer."
 language = "en"
 src = "src"
 

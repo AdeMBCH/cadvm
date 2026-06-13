@@ -109,7 +109,7 @@ Geometry actions (`g`, `v`) need the `cadvm-geom` helper (see
 | Command                       | Description                                               |
 |-------------------------------|-----------------------------------------------------------|
 | `cadvm init`                  | Create a `.cadvm/` repository in the current directory.   |
-| `cadvm snapshot -m "msg"`     | Record a snapshot (commit) of all tracked STEP/STP files. |
+| `cadvm snapshot -m "msg"`     | Record a snapshot (commit) of all tracked CAD files (STEP/STP/STL/OBJ). |
 | `cadvm ui`                    | Interactive full-screen terminal dashboard.               |
 | `cadvm status`                | Show new / modified / deleted files vs. HEAD.             |
 | `cadvm log`                   | Show the commit history of HEAD.                          |
@@ -212,7 +212,7 @@ green = added, red = removed** — and each layer can be toggled; drag to rotate
 scroll to zoom.
 
 ```bash
-cadvm view HEAD~1 HEAD                 # if exactly one STEP file changed
+cadvm view HEAD~1 HEAD                 # if exactly one file changed
 cadvm view HEAD~1 HEAD -- piece.step   # pick the file when several changed
 cadvm view HEAD~1 HEAD --open          # also open it in the browser
 cadvm view HEAD~1 HEAD -o diff.html    # choose the output path

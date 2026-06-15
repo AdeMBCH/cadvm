@@ -24,7 +24,8 @@ an **interactive terminal dashboard**.
 > **[cadvm for AI](https://adembch.github.io/cadvm/ai.html)**.
 
 📖 **Documentation: <https://adembch.github.io/cadvm/>** ·
-🧊 **[Live 3D demo](https://adembch.github.io/cadvm/demo.html)**
+🧊 **[Live 3D demo](https://adembch.github.io/cadvm/demo.html)** ·
+▶ **[AI-agent example](examples/agent-loop.sh)**
 
 ## Installation
 

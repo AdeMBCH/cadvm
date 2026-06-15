@@ -20,6 +20,7 @@ use cadvm_core::model::FileEntry;
 use cadvm_core::revision;
 use cadvm_core::snapshot;
 use cadvm_core::status::working_tree_status;
+use cadvm_core::verify;
 use cadvm_core::Repository;
 
 mod ui;
@@ -133,6 +134,25 @@ enum Command {
         paths: Vec<PathBuf>,
     },
 
+    /// Verify a geometric diff against expectations — pass/fail for AI gating & CI.
+    ///
+    /// Exit code is 0 when all checks pass, non-zero otherwise.
+    Verify {
+        /// Left/old revision.
+        rev_a: String,
+        /// Right/new revision.
+        rev_b: String,
+        /// Assertion like `added_volume>100` (repeatable; all must hold).
+        #[arg(long = "expect", value_name = "METRIC OP VALUE")]
+        expects: Vec<String>,
+        /// Emit the report as JSON.
+        #[arg(long)]
+        json: bool,
+        /// File to verify (after `--`); required if several files changed.
+        #[arg(last = true)]
+        paths: Vec<PathBuf>,
+    },
+
     /// Generate a standalone 3D HTML viewer of the geometric diff (needs cadvm-geom).
     View {
         /// Left/old revision.
@@ -214,6 +234,13 @@ fn run() -> Result<()> {
             json,
             paths,
         } => cmd_geom_diff(&rev_a, &rev_b, &paths, json),
+        Command::Verify {
+            rev_a,
+            rev_b,
+            expects,
+            json,
+            paths,
+        } => cmd_verify(&rev_a, &rev_b, &expects, json, &paths),
         Command::View {
             rev_a,
             rev_b,
@@ -704,6 +731,149 @@ fn print_mesh_diff(m: &geom::MeshDiff) {
         println!("    bbox:      {:.2}×{:.2}×{:.2}", s[0], s[1], s[2]);
     }
     println!("    (distance-based mesh diff)");
+}
+
+/// Compute the named geometric metrics for one modified file between two revs.
+fn metrics_for_file(
+    repo: &Repository,
+    entry_a: &FileEntry,
+    entry_b: &FileEntry,
+) -> Result<std::collections::BTreeMap<String, f64>> {
+    if entry_b.format.is_mesh() {
+        let content_a = repo.store().read_file_content(&entry_a.blob_ref)?;
+        let content_b = repo.store().read_file_content(&entry_b.blob_ref)?;
+        let m = meshdiff::diff(&content_a, &content_b, entry_b.format);
+        if !m.is_ok() {
+            anyhow::bail!(
+                "mesh diff error: {}",
+                m.error.as_deref().unwrap_or("unknown")
+            );
+        }
+        Ok(verify::metrics_from_mesh(&m))
+    } else {
+        let tmp = repo.tmp_dir();
+        let file_a = extract_version(repo, &tmp, entry_a, "verify-a")?;
+        let file_b = extract_version(repo, &tmp, entry_b, "verify-b")?;
+        let result = geom::diff_files(&file_a, &file_b);
+        let _ = std::fs::remove_file(&file_a);
+        let _ = std::fs::remove_file(&file_b);
+        let g = result?;
+        if !g.is_ok() {
+            anyhow::bail!(
+                "geometry error: {}",
+                g.error.as_deref().unwrap_or("unknown")
+            );
+        }
+        Ok(verify::metrics_from_geom(&g))
+    }
+}
+
+fn cmd_verify(
+    rev_a: &str,
+    rev_b: &str,
+    expects: &[String],
+    json: bool,
+    paths: &[PathBuf],
+) -> Result<()> {
+    let repo = open_repo()?;
+
+    // Parse the assertions up front so a typo fails fast.
+    let mut checks = Vec::with_capacity(expects.len());
+    for e in expects {
+        checks.push(verify::parse_check(e).map_err(|m| anyhow::anyhow!(m))?);
+    }
+
+    let a_id = revision::resolve(&repo, rev_a).with_context(|| format!("resolving `{rev_a}`"))?;
+    let b_id = revision::resolve(&repo, rev_b).with_context(|| format!("resolving `{rev_b}`"))?;
+    let manifest_a = repo.manifest_of_commit(&a_id)?;
+    let manifest_b = repo.manifest_of_commit(&b_id)?;
+
+    // One file at a time (like `view`).
+    let modified: Vec<PathBuf> = diff::diff_manifests(&manifest_a, &manifest_b)
+        .modified
+        .into_iter()
+        .map(|f| f.path)
+        .collect();
+    let file = match paths {
+        [] => match modified.as_slice() {
+            [one] => one.clone(),
+            [] => anyhow::bail!("no modified files between {rev_a} and {rev_b}"),
+            many => {
+                let list = many
+                    .iter()
+                    .map(|p| format!("  {}", p.display()))
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                anyhow::bail!("several files changed; pick one with `-- <file>`:\n{list}");
+            }
+        },
+        [one] => one.clone(),
+        _ => anyhow::bail!("verify handles one file at a time"),
+    };
+
+    let entry_a = manifest_a
+        .files
+        .get(&file)
+        .with_context(|| format!("`{}` not present in {rev_a}", file.display()))?;
+    let entry_b = manifest_b
+        .files
+        .get(&file)
+        .with_context(|| format!("`{}` not present in {rev_b}", file.display()))?;
+
+    let metrics = metrics_for_file(&repo, entry_a, entry_b)?;
+    let report = verify::evaluate(metrics, &checks);
+
+    if json {
+        let out = serde_json::json!({
+            "file": file,
+            "rev_a": a_id.short(),
+            "rev_b": b_id.short(),
+            "report": report,
+        });
+        println!("{}", serde_json::to_string_pretty(&out)?);
+    } else {
+        print_verify(&file, &a_id, &b_id, &report);
+    }
+
+    if !report.pass {
+        std::process::exit(1);
+    }
+    Ok(())
+}
+
+fn print_verify(
+    file: &std::path::Path,
+    a: &cadvm_core::ObjectId,
+    b: &cadvm_core::ObjectId,
+    r: &verify::VerifyReport,
+) {
+    println!("Verify {}  ({}..{})", file.display(), a.short(), b.short());
+    if r.checks.is_empty() {
+        println!("  (no expectations given — metrics only)");
+        for (k, v) in &r.metrics {
+            println!("    {k} = {v}");
+        }
+        return;
+    }
+    for c in &r.checks {
+        let mark = if c.pass { "✓" } else { "✗" };
+        let actual = c
+            .actual
+            .map(|a| a.to_string())
+            .unwrap_or_else(|| "n/a".into());
+        println!(
+            "  {mark} {} {} {}   (actual {actual})",
+            c.metric,
+            c.op.as_str(),
+            c.expected
+        );
+    }
+    let failed = r.checks.iter().filter(|c| !c.pass).count();
+    if r.pass {
+        println!("PASS ({} checks)", r.checks.len());
+    } else {
+        println!("FAIL ({failed}/{} checks failed)", r.checks.len());
+    }
 }
 
 fn cmd_view(

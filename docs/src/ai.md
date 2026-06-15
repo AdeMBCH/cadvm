@@ -37,12 +37,23 @@ cadvm geom-diff HEAD~1 HEAD --json
 }
 ```
 
-Your agent parses that and decides:
+Your agent parses that and decides — or it lets cadvm **judge** directly with
+`verify`, which asserts expectations and returns pass/fail (exit code 0/1):
 
-- **verify** — did the change match the instruction? (e.g. "added ≈ the new
-  boss volume, removed ≈ 0").
-- **gate** — only accept iterations whose diff matches an expectation.
+```bash
+# "the edit should add material and remove almost none"
+cadvm verify HEAD~1 HEAD --expect 'added_volume>50' --expect 'removed_volume<1' --json
+# → {"report":{"pass":true,"checks":[...]}}   exit 0 = pass, 1 = fail
+```
+
+So the agent can:
+
+- **verify / gate** — accept an iteration only if `cadvm verify` passes;
 - **revert** — `cadvm revert HEAD` to undo a bad generation, then retry.
+
+Available metrics: `added_volume`, `removed_volume`, `common_volume`,
+`volume_delta`, `faces_added/removed/common` (STEP); `added_tris`,
+`removed_tris`, `unchanged_tris`, `bbox_dx/dy/dz` (STL/OBJ).
 
 Mesh files (STL/OBJ) emit the same shape with `unchanged` / `added` / `removed`
 triangle layers — and need **no Open CASCADE** (pure-Rust diff).
@@ -66,6 +77,6 @@ triangle layers — and need **no Open CASCADE** (pure-Rust diff).
   produce the intended geometric change?".
 - **Regression gates** in CI for generated or parametric CAD.
 
-> Today the agent reads the JSON and applies its own thresholds. A built-in
-> `verify` command (assert expected deltas) and an MCP server are on the
+> `cadvm verify` is built in (above). An **MCP server** — exposing snapshot /
+> diff / geom-diff / verify as tools an agent calls natively — is next on the
 > [roadmap](roadmap.md).

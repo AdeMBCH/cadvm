@@ -26,6 +26,7 @@ pub mod revision;
 pub mod snapshot;
 pub mod status;
 pub mod step;
+pub mod verify;
 pub mod worktree;
 
 pub use config::Config;

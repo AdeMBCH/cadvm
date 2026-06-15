@@ -19,6 +19,7 @@ repository discovered by walking up from the current directory.
 | `cadvm revert <rev>` | Create a commit that restores HEAD's parent state. |
 | `cadvm gc [--dry-run \| --prune]` | Report / delete unreferenced objects. |
 | `cadvm geom-diff <a> <b> [--json]` | Geometric diff of modified files (STEP via OCCT; STL/OBJ pure Rust). `--json` for agents. |
+| `cadvm verify <a> <b> --expect '<m><op><v>'…` | Assert geometric expectations; exit 0/1 (AI gating & CI). |
 | `cadvm view <a> <b>` | Generate a standalone 3D HTML viewer of the diff. |
 | `cadvm ui` | Interactive full-screen terminal dashboard. |
 | `cadvm config [<key>] [<value>]` | Get / set / list config (e.g. `user.name`). |

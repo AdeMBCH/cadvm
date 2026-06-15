@@ -2,6 +2,7 @@
 
 [Introduction](introduction.md)
 [cadvm for AI agents](ai.md)
+[Example: AI agent loop](example-agent.md)
 [Live demo](demo.md)
 
 # User Guide

@@ -8,9 +8,9 @@ agent *what actually changed*, and lets it accept or roll back — automatically
 A human reviews a diff by eye. **An agent needs structured data** — that is what
 `cadvm geom-diff --json` provides.
 
-> ▶ **Runnable demo:** [`examples/agent-loop.sh`](https://github.com/AdeMBCH/cadvm/blob/main/examples/agent-loop.sh)
-> replays this whole loop (accept a good edit, catch & revert a regression) — no
-> LLM, no Open CASCADE.
+> ▶ **See it run:** the [Example: AI agent loop](example-agent.md) page replays
+> this whole loop (accept a good edit, catch & revert a regression) with its real
+> output — no LLM, no Open CASCADE.
 
 ## The agent loop
 

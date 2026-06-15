@@ -6,11 +6,12 @@
 use std::path::PathBuf;
 
 use cadvm_store::ObjectId;
+use serde::Serialize;
 
 use crate::model::{FileEntry, Manifest};
 
 /// Per-file metadata changes for a modified file.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct FileDiff {
     pub path: PathBuf,
     pub size_bytes: (u64, u64),
@@ -56,7 +57,7 @@ impl FileDiff {
 }
 
 /// The full diff between two manifests.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 pub struct ManifestDiff {
     pub added: Vec<PathBuf>,
     pub removed: Vec<PathBuf>,

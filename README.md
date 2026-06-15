@@ -11,17 +11,19 @@
 
 # cadvm — CAD Version Manager
 
-`cadvm` is a **local-first version manager for CAD files** (STEP, STP, STL, OBJ).
-It brings
-Git-like workflows — snapshots, branches, diff, checkout, revert — to CAD data,
-with a content-addressed, deduplicated object store.
+`cadvm` is **version control, geometric diff and verification for CAD files**
+(STEP, STP, STL, OBJ) — local-first, with a content-addressed deduplicated store,
+Git-like workflows (snapshots, branches, diff, checkout, revert), a **geometric
+diff** (added / removed / common material), a **self-contained 3D viewer**, and
+an **interactive terminal dashboard**.
+
+> 🤖 **Built for AI-generated CAD.** If your AI produces or edits CAD, plug cadvm
+> in: snapshot every iteration, then `geom-diff --json` gives your agent a
+> **machine-readable signal** of what changed — to verify the edit did what was
+> asked, gate it, or revert it. See **[cadvm for AI](https://adembch.github.io/cadvm/ai.html)**.
 
 📖 **Documentation: <https://adembch.github.io/cadvm/>** ·
 🧊 **[Live 3D demo](https://adembch.github.io/cadvm/demo.html)**
-
-It goes further than text versioning: a **geometric diff** (added / removed /
-common material) via Open CASCADE, a **self-contained 3D viewer**, and an
-**interactive terminal dashboard**.
 
 ## Installation
 

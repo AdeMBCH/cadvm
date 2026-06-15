@@ -10,7 +10,7 @@ repository discovered by walking up from the current directory.
 | `cadvm status` | Show new / modified / deleted files vs. HEAD. |
 | `cadvm log` | Show the commit history of HEAD. |
 | `cadvm show [<rev>]` | Show one commit's details and per-file metadata. |
-| `cadvm diff [<a> <b>]` | Metadata diff (default `HEAD~1..HEAD`). |
+| `cadvm diff [<a> <b>] [--json]` | Metadata diff (default `HEAD~1..HEAD`); `--json` for scripts/agents. |
 | `cadvm checkout <rev> [-- <file>…]` | Restore the working tree (or named files) to a revision. |
 | `cadvm branch` | List branches. |
 | `cadvm branch <name>` | Create a branch at HEAD. |
@@ -18,7 +18,7 @@ repository discovered by walking up from the current directory.
 | `cadvm switch <name>` | Switch branches, restoring their files. |
 | `cadvm revert <rev>` | Create a commit that restores HEAD's parent state. |
 | `cadvm gc [--dry-run \| --prune]` | Report / delete unreferenced objects. |
-| `cadvm geom-diff <a> <b>` | Geometric diff of modified files (STEP via OCCT; STL/OBJ pure Rust). |
+| `cadvm geom-diff <a> <b> [--json]` | Geometric diff of modified files (STEP via OCCT; STL/OBJ pure Rust). `--json` for agents. |
 | `cadvm view <a> <b>` | Generate a standalone 3D HTML viewer of the diff. |
 | `cadvm ui` | Interactive full-screen terminal dashboard. |
 | `cadvm config [<key>] [<value>]` | Get / set / list config (e.g. `user.name`). |

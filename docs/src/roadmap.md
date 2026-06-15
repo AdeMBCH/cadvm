@@ -27,6 +27,8 @@
 
 ## Next
 
+- A `verify` command that asserts expected geometric deltas (for AI gating/evals).
+- An MCP server exposing diff/version as a tool agents can call.
 - Sharper mesh diff (point sampling beyond centroids, configurable tolerance).
 - glTF/PLY mesh formats.
 - A staging index and richer merge tooling.

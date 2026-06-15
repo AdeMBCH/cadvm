@@ -64,6 +64,9 @@ enum Command {
         rev_a: Option<String>,
         /// Right/new revision.
         rev_b: Option<String>,
+        /// Emit the diff as JSON (for scripts and AI agents).
+        #[arg(long)]
+        json: bool,
     },
 
     /// Restore the working tree to a revision (does not move the branch).
@@ -115,12 +118,16 @@ enum Command {
         prune: bool,
     },
 
-    /// Geometric diff between two revisions (requires the cadvm-geom helper).
+    /// Geometric diff between two revisions (STEP via cadvm-geom; STL/OBJ pure Rust).
     GeomDiff {
         /// Left/old revision.
         rev_a: String,
         /// Right/new revision.
         rev_b: String,
+        /// Emit the geometric diff as JSON — the machine-readable verification
+        /// signal for AI pipelines and scripts.
+        #[arg(long)]
+        json: bool,
         /// Restrict to these files (after `--`); default: all modified files.
         #[arg(last = true)]
         paths: Vec<PathBuf>,
@@ -195,7 +202,7 @@ fn run() -> Result<()> {
         Command::Status => cmd_status(),
         Command::Log => cmd_log(),
         Command::Show { rev } => cmd_show(&rev),
-        Command::Diff { rev_a, rev_b } => cmd_diff(rev_a, rev_b),
+        Command::Diff { rev_a, rev_b, json } => cmd_diff(rev_a, rev_b, json),
         Command::Checkout { rev, paths, force } => cmd_checkout(&rev, &paths, force),
         Command::Branch { name, delete } => cmd_branch(name, delete),
         Command::Switch { name, force } => cmd_switch(&name, force),
@@ -204,8 +211,9 @@ fn run() -> Result<()> {
         Command::GeomDiff {
             rev_a,
             rev_b,
+            json,
             paths,
-        } => cmd_geom_diff(&rev_a, &rev_b, &paths),
+        } => cmd_geom_diff(&rev_a, &rev_b, &paths, json),
         Command::View {
             rev_a,
             rev_b,
@@ -396,7 +404,7 @@ fn cmd_show(rev: &str) -> Result<()> {
     Ok(())
 }
 
-fn cmd_diff(rev_a: Option<String>, rev_b: Option<String>) -> Result<()> {
+fn cmd_diff(rev_a: Option<String>, rev_b: Option<String>, json: bool) -> Result<()> {
     let repo = open_repo()?;
 
     let (a_spec, b_spec) = match (rev_a, rev_b) {
@@ -413,6 +421,16 @@ fn cmd_diff(rev_a: Option<String>, rev_b: Option<String>) -> Result<()> {
     let manifest_a = repo.manifest_of_commit(&a_id)?;
     let manifest_b = repo.manifest_of_commit(&b_id)?;
     let d = diff::diff_manifests(&manifest_a, &manifest_b);
+
+    if json {
+        let out = serde_json::json!({
+            "rev_a": a_id.short(),
+            "rev_b": b_id.short(),
+            "diff": d,
+        });
+        println!("{}", serde_json::to_string_pretty(&out)?);
+        return Ok(());
+    }
 
     println!("Diff {}..{}", a_id.short(), b_id.short());
     print_diff(&d);
@@ -585,7 +603,7 @@ fn cmd_gc(dry_run: bool, prune: bool) -> Result<()> {
     Ok(())
 }
 
-fn cmd_geom_diff(rev_a: &str, rev_b: &str, paths: &[PathBuf]) -> Result<()> {
+fn cmd_geom_diff(rev_a: &str, rev_b: &str, paths: &[PathBuf], json: bool) -> Result<()> {
     let repo = open_repo()?;
     let a_id = revision::resolve(&repo, rev_a).with_context(|| format!("resolving `{rev_a}`"))?;
     let b_id = revision::resolve(&repo, rev_b).with_context(|| format!("resolving `{rev_b}`"))?;
@@ -603,21 +621,34 @@ fn cmd_geom_diff(rev_a: &str, rev_b: &str, paths: &[PathBuf]) -> Result<()> {
         paths.to_vec()
     };
 
-    println!("Geometric diff {}..{}", a_id.short(), b_id.short());
-    if targets.is_empty() {
-        println!("No modified STEP files to compare.");
-        return Ok(());
+    let tmp = repo.tmp_dir();
+    let mut json_files: Vec<serde_json::Value> = Vec::new();
+
+    if !json {
+        println!("Geometric diff {}..{}", a_id.short(), b_id.short());
+        if targets.is_empty() {
+            println!("No modified files to compare.");
+            return Ok(());
+        }
     }
 
-    let tmp = repo.tmp_dir();
     for (i, path) in targets.iter().enumerate() {
-        println!("\n  {}", path.display());
+        if !json {
+            println!("\n  {}", path.display());
+        }
         match (manifest_a.files.get(path), manifest_b.files.get(path)) {
             (Some(entry_a), Some(entry_b)) if entry_b.format.is_mesh() => {
                 // STL/OBJ: distance-based mesh diff, pure Rust (no Open CASCADE).
                 let content_a = repo.store().read_file_content(&entry_a.blob_ref)?;
                 let content_b = repo.store().read_file_content(&entry_b.blob_ref)?;
-                print_mesh_diff(&meshdiff::diff(&content_a, &content_b, entry_b.format));
+                let result = meshdiff::diff(&content_a, &content_b, entry_b.format);
+                if json {
+                    json_files.push(serde_json::json!({
+                        "path": path, "kind": "mesh", "diff": result,
+                    }));
+                } else {
+                    print_mesh_diff(&result);
+                }
             }
             (Some(entry_a), Some(entry_b)) => {
                 let file_a = extract_version(&repo, &tmp, entry_a, &format!("a{i}"))?;
@@ -625,10 +656,32 @@ fn cmd_geom_diff(rev_a: &str, rev_b: &str, paths: &[PathBuf]) -> Result<()> {
                 let result = geom::diff_files(&file_a, &file_b);
                 let _ = std::fs::remove_file(&file_a);
                 let _ = std::fs::remove_file(&file_b);
-                print_geom_result(result?);
+                let result = result?;
+                if json {
+                    json_files.push(serde_json::json!({
+                        "path": path, "kind": "brep", "diff": result,
+                    }));
+                } else {
+                    print_geom_result(result);
+                }
             }
-            _ => println!("    present on only one side — geometric diff skipped"),
+            _ => {
+                if json {
+                    json_files.push(serde_json::json!({ "path": path, "kind": "one-sided" }));
+                } else {
+                    println!("    present on only one side — geometric diff skipped");
+                }
+            }
         }
+    }
+
+    if json {
+        let out = serde_json::json!({
+            "rev_a": a_id.short(),
+            "rev_b": b_id.short(),
+            "files": json_files,
+        });
+        println!("{}", serde_json::to_string_pretty(&out)?);
     }
     Ok(())
 }

@@ -1,6 +1,7 @@
 # Summary
 
 [Introduction](introduction.md)
+[cadvm for AI agents](ai.md)
 [Live demo](demo.md)
 
 # User Guide

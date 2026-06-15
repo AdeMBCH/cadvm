@@ -172,6 +172,7 @@ dependencies = [
  "libc",
  "predicates",
  "ratatui",
+ "serde_json",
  "tempfile",
 ]
 

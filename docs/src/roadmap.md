@@ -21,15 +21,15 @@
   green/red/grey changes.
 - **STL/OBJ support** — versioning + mesh metadata, and a pure-Rust
   distance-based mesh diff feeding the same 3D viewer (no Open CASCADE).
-- **AI/agent surface** — `--json` diffs and a `verify` command (assert expected
-  geometric deltas, exit 0/1) for gating and evals.
+- **AI/agent surface** — `--json` diffs, a `verify` command (assert expected
+  geometric deltas, exit 0/1), and an **MCP server** (`cadvm mcp`) exposing
+  cadvm as native tools for agents.
 - **Interactive TUI** — `cadvm ui`, and shell completions.
 - **Cross-platform** — CI on Linux/macOS/Windows and prebuilt release binaries.
 - **Docs** — user guide and API reference published online.
 
 ## Next
 
-- An MCP server exposing diff/version/verify as tools agents call natively.
 - Sharper mesh diff (point sampling beyond centroids, configurable tolerance).
 - glTF/PLY mesh formats.
 - A staging index and richer merge tooling.

@@ -77,6 +77,34 @@ triangle layers — and need **no Open CASCADE** (pure-Rust diff).
   produce the intended geometric change?".
 - **Regression gates** in CI for generated or parametric CAD.
 
-> `cadvm verify` is built in (above). An **MCP server** — exposing snapshot /
-> diff / geom-diff / verify as tools an agent calls natively — is next on the
-> [roadmap](roadmap.md).
+## Use it via MCP (no glue code)
+
+cadvm ships an **MCP server** so an agent calls it as **native tools** — no
+subprocess wiring or output parsing. Register it with your MCP client:
+
+```jsonc
+{
+  "mcpServers": {
+    "cadvm": { "command": "cadvm", "args": ["mcp"] }
+  }
+}
+```
+
+(With Claude Code: `claude mcp add cadvm -- cadvm mcp`.) It speaks JSON-RPC 2.0
+over stdio — local, offline, no server to host.
+
+The model then sees these tools:
+
+| Tool | Does |
+|------|------|
+| `cadvm_status` | new / modified / deleted vs HEAD |
+| `cadvm_snapshot` | pin an iteration (commit) |
+| `cadvm_log` | history |
+| `cadvm_diff` | metadata diff |
+| `cadvm_geom_diff` | geometric diff (added/removed/common) |
+| `cadvm_verify` | assert expectations → pass/fail |
+| `cadvm_revert` | undo the last iteration |
+
+Each tool takes an optional `repo` argument (the working directory); otherwise it
+uses the server's current directory. So the loop above becomes a sequence of
+tool calls the model makes on its own.

@@ -22,6 +22,7 @@ repository discovered by walking up from the current directory.
 | `cadvm verify <a> <b> --expect '<m><op><v>'…` | Assert geometric expectations; exit 0/1 (AI gating & CI). |
 | `cadvm view <a> <b>` | Generate a standalone 3D HTML viewer of the diff. |
 | `cadvm ui` | Interactive full-screen terminal dashboard. |
+| `cadvm mcp` | Run an MCP server over stdio — exposes cadvm as tools for AI agents. |
 | `cadvm config [<key>] [<value>]` | Get / set / list config (e.g. `user.name`). |
 | `cadvm completions <shell>` | Print a shell completion script. |
 

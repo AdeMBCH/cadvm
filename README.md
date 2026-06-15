@@ -18,9 +18,10 @@ diff** (added / removed / common material), a **self-contained 3D viewer**, and
 an **interactive terminal dashboard**.
 
 > 🤖 **Built for AI-generated CAD.** If your AI produces or edits CAD, plug cadvm
-> in: snapshot every iteration, then `geom-diff --json` gives your agent a
-> **machine-readable signal** of what changed — to verify the edit did what was
-> asked, gate it, or revert it. See **[cadvm for AI](https://adembch.github.io/cadvm/ai.html)**.
+> in: snapshot every iteration, get a **machine-readable diff** (`geom-diff --json`),
+> let `cadvm verify` **judge** it pass/fail, or **revert** a bad one — and call it
+> all as **native MCP tools** (`cadvm mcp`). See
+> **[cadvm for AI](https://adembch.github.io/cadvm/ai.html)**.
 
 📖 **Documentation: <https://adembch.github.io/cadvm/>** ·
 🧊 **[Live 3D demo](https://adembch.github.io/cadvm/demo.html)**
@@ -127,8 +128,10 @@ Geometry actions (`g`, `v`) need the `cadvm-geom` helper (see
 | `cadvm revert <rev>`          | Create a commit that restores HEAD's parent state.        |
 | `cadvm gc [--dry-run\|--prune]` | Report (and optionally delete) unreferenced objects.    |
 | `cadvm config [<key>] [<value>]` | Get / set / list config (e.g. `user.name`).            |
-| `cadvm geom-diff <rev_a> <rev_b>` | Geometric diff of modified files (STEP needs `cadvm-geom`; STL/OBJ pure Rust). |
+| `cadvm geom-diff <rev_a> <rev_b> [--json]` | Geometric diff of modified files (STEP needs `cadvm-geom`; STL/OBJ pure Rust). |
+| `cadvm verify <a> <b> --expect …` | Assert geometric expectations; exit 0/1 (AI gating & CI). |
 | `cadvm view <rev_a> <rev_b>`   | Standalone 3D HTML viewer of the diff (STEP needs `cadvm-geom`; STL/OBJ pure Rust). |
+| `cadvm mcp`                    | MCP server (stdio) exposing cadvm as tools for AI agents. |
 
 Tracked formats: **`.step`**, **`.stp`** (B-Rep) and **`.stl`**, **`.obj`**
 (triangle mesh). STEP/STP get the full geometric diff; STL/OBJ are versioned with

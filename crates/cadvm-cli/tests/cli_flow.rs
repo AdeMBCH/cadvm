@@ -99,3 +99,23 @@ fn snapshot_outside_repo_fails() {
         .failure()
         .stderr(predicate::str::contains("not a cadvm repository"));
 }
+
+#[test]
+fn mcp_handshake_and_tools_list() {
+    let tmp = tempfile::tempdir().unwrap();
+    // initialize + tools/list do not touch a repository.
+    let input = concat!(
+        r#"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05"}}"#,
+        "\n",
+        r#"{"jsonrpc":"2.0","id":2,"method":"tools/list"}"#,
+        "\n",
+    );
+    cadvm(tmp.path())
+        .arg("mcp")
+        .write_stdin(input)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("\"serverInfo\""))
+        .stdout(predicate::str::contains("cadvm_geom_diff"))
+        .stdout(predicate::str::contains("cadvm_verify"));
+}

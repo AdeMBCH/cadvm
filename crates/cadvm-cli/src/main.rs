@@ -23,6 +23,7 @@ use cadvm_core::status::working_tree_status;
 use cadvm_core::verify;
 use cadvm_core::Repository;
 
+mod mcp;
 mod ui;
 mod viewer;
 
@@ -173,6 +174,9 @@ enum Command {
     /// Launch the interactive terminal dashboard.
     Ui,
 
+    /// Run an MCP server over stdio — exposes cadvm as tools for AI agents.
+    Mcp,
+
     /// Print a shell completion script (bash, zsh, fish, elvish, powershell).
     Completions {
         /// Target shell.
@@ -249,6 +253,7 @@ fn run() -> Result<()> {
             paths,
         } => cmd_view(&rev_a, &rev_b, output, open, &paths),
         Command::Ui => ui::run(open_repo()?),
+        Command::Mcp => mcp::run(),
         Command::Completions { shell } => {
             let mut cmd = Cli::command();
             clap_complete::generate(shell, &mut cmd, "cadvm", &mut std::io::stdout());

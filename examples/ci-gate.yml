@@ -1,0 +1,26 @@
+# Example: gate AI-generated CAD in CI with cadvm.
+#
+# Copy this into your repo's .github/workflows/ and adjust the file paths and
+# expectations. The job FAILS (blocks the PR) if the generated geometry doesn't
+# match the reference within tolerance. STL/OBJ work out of the box (pure Rust);
+# STEP/STP additionally need Open CASCADE on the runner.
+name: CAD gate
+
+on: [pull_request]
+
+jobs:
+  geometry-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # …your step that produces candidate.stl from the model goes here…
+
+      - name: Verify the generated part against the reference
+        uses: AdeMBCH/cadvm/.github/actions/cadvm-verify@main
+        with:
+          file-a: reference.stl
+          file-b: candidate.stl
+          expect: |
+            added_tris<10
+            removed_tris<10

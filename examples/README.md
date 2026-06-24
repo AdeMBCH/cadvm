@@ -30,3 +30,19 @@ The decision is driven by `cadvm verify`'s **exit code** (0 = pass, non-zero =
 fail) — the same hook an agent or a CI gate would use. See
 [cadvm for AI](https://adembch.github.io/cadvm/ai.html) for the MCP-tool version
 of the same loop.
+
+## `ci-gate.yml` — gate generated CAD in CI
+
+A copy-paste GitHub Actions workflow that fails a pull request when the generated
+part drifts from the reference, using the bundled `cadvm-verify` action:
+
+```yaml
+- uses: AdeMBCH/cadvm/.github/actions/cadvm-verify@main
+  with:
+    file-a: reference.stl
+    file-b: candidate.stl
+    expect: |
+      added_tris<10
+      removed_tris<10
+```
+

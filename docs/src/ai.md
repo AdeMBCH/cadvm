@@ -81,6 +81,24 @@ cadvm view     --files candidate.stl  reference.stl            # 3D diff for a h
 This makes `cadvm verify` a drop-in **geometric assertion** for any eval harness,
 RL reward, or CI job — exit code in, JSON out.
 
+### As a GitHub Action
+
+A ready-made action gates generated CAD in a pull request — it downloads cadvm
+and runs `verify --files`, failing the job if the geometry drifts:
+
+```yaml
+- uses: AdeMBCH/cadvm/.github/actions/cadvm-verify@main
+  with:
+    file-a: reference.stl
+    file-b: candidate.stl
+    expect: |
+      added_tris<10
+      removed_tris<10
+```
+
+Full sample workflow: [`examples/ci-gate.yml`](https://github.com/AdeMBCH/cadvm/blob/main/examples/ci-gate.yml).
+(STL/OBJ work out of the box; STEP/STP need Open CASCADE on the runner.)
+
 ## Why it fits AI workflows
 
 - **Structured feedback** — `--json` is a reward/verification signal for agents,

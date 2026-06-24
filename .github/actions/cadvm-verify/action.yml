@@ -1,0 +1,59 @@
+name: "cadvm verify"
+description: "Gate AI-generated CAD in CI: assert geometric expectations on two files (pass/fail)."
+branding:
+  icon: "check-circle"
+  color: "green"
+
+inputs:
+  file-a:
+    description: "Reference / old CAD file (.stl, .obj, .step, .stp)."
+    required: true
+  file-b:
+    description: "Candidate / new CAD file to check against file-a."
+    required: true
+  expect:
+    description: "Newline-separated assertions, e.g. 'added_tris<5'. All must hold."
+    required: true
+  version:
+    description: "cadvm release tag to use (default: latest)."
+    required: false
+    default: "latest"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install cadvm
+      shell: bash
+      run: |
+        set -euo pipefail
+        case "${{ runner.os }}/$(uname -m)" in
+          Linux/x86_64)            target="x86_64-unknown-linux-gnu" ;;
+          macOS/arm64|macOS/aarch64) target="aarch64-apple-darwin" ;;
+          *)
+            echo "::error::cadvm-verify has no prebuilt binary for ${{ runner.os }}/$(uname -m)"
+            exit 1 ;;
+        esac
+        base="https://github.com/AdeMBCH/cadvm/releases"
+        if [ "${{ inputs.version }}" = "latest" ]; then
+          url="$base/latest/download/cadvm-$target"
+        else
+          url="$base/download/${{ inputs.version }}/cadvm-$target"
+        fi
+        dir="$RUNNER_TEMP/cadvm-bin"
+        mkdir -p "$dir"
+        echo "Downloading $url"
+        curl -fsSL "$url" -o "$dir/cadvm"
+        chmod +x "$dir/cadvm"
+        echo "$dir" >> "$GITHUB_PATH"
+
+    - name: Verify
+      shell: bash
+      run: |
+        set -euo pipefail
+        args=()
+        while IFS= read -r line; do
+          line="$(echo "$line" | xargs)"   # trim
+          [ -n "$line" ] && args+=(--expect "$line")
+        done <<< "${{ inputs.expect }}"
+        echo "cadvm verify --files '${{ inputs.file-a }}' '${{ inputs.file-b }}' ${args[*]}"
+        cadvm verify --files "${{ inputs.file-a }}" "${{ inputs.file-b }}" "${args[@]}"

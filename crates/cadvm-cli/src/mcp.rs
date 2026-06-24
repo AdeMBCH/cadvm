@@ -116,6 +116,10 @@ fn tool_specs() -> Value {
          "inputSchema": {"type": "object", "properties": {"rev_a": rev("old rev"), "rev_b": rev("new rev"), "expects": {"type": "array", "items": {"type": "string"}}, "file": rev("file if several changed"), "repo": rev("repo path")}, "required": ["rev_a", "rev_b"]}},
         {"name": "cadvm_revert", "description": "Revert HEAD: create a commit restoring its parent. Use to undo a bad AI iteration.",
          "inputSchema": {"type": "object", "properties": {"force": {"type": "boolean"}, "repo": rev("repo path")}}},
+        {"name": "cadvm_compare_files", "description": "Geometric diff of TWO CAD files on disk — no repository. Ideal for evals: compare a model's output to a reference.",
+         "inputSchema": {"type": "object", "properties": {"file_a": rev("old/reference file path"), "file_b": rev("new/candidate file path")}, "required": ["file_a", "file_b"]}},
+        {"name": "cadvm_verify_files", "description": "Assert geometric expectations on TWO files on disk (no repo); returns pass/fail. Expectations like 'added_volume>100'.",
+         "inputSchema": {"type": "object", "properties": {"file_a": rev("reference file"), "file_b": rev("candidate file"), "expects": {"type": "array", "items": {"type": "string"}}}, "required": ["file_a", "file_b"]}},
     ])
 }
 
@@ -130,8 +134,32 @@ fn call_tool(name: &str, args: &Value) -> Result<Value> {
         "cadvm_geom_diff" => tool_geom_diff(args),
         "cadvm_verify" => tool_verify(args),
         "cadvm_revert" => tool_revert(args),
+        "cadvm_compare_files" => tool_compare_files(args),
+        "cadvm_verify_files" => tool_verify_files(args),
         _ => anyhow::bail!("unknown tool: {name}"),
     }
+}
+
+fn tool_compare_files(args: &Value) -> Result<Value> {
+    let a = arg_str(args, "file_a").context("`file_a` is required")?;
+    let b = arg_str(args, "file_b").context("`file_b` is required")?;
+    crate::geom_diff_value_for_paths(std::path::Path::new(a), std::path::Path::new(b))
+}
+
+fn tool_verify_files(args: &Value) -> Result<Value> {
+    let a = arg_str(args, "file_a").context("`file_a` is required")?;
+    let b = arg_str(args, "file_b").context("`file_b` is required")?;
+    let mut checks = Vec::new();
+    if let Some(arr) = args.get("expects").and_then(Value::as_array) {
+        for e in arr {
+            if let Some(s) = e.as_str() {
+                checks.push(verify::parse_check(s).map_err(|m| anyhow::anyhow!(m))?);
+            }
+        }
+    }
+    let metrics = crate::metrics_for_paths(std::path::Path::new(a), std::path::Path::new(b))?;
+    let report = verify::evaluate(metrics, &checks);
+    Ok(json!({ "file_a": a, "file_b": b, "report": report }))
 }
 
 fn open(args: &Value) -> Result<Repository> {

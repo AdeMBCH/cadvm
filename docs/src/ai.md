@@ -62,6 +62,25 @@ Available metrics: `added_volume`, `removed_volume`, `common_volume`,
 Mesh files (STL/OBJ) emit the same shape with `unchanged` / `added` / `removed`
 triangle layers — and need **no Open CASCADE** (pure-Rust diff).
 
+## Evals & CI gates (no repository)
+
+For evals and CI you usually have **two files** — the model's output and a
+reference — and just want a geometric pass/fail. `--files` compares them
+directly, **no repo, no snapshots**:
+
+```bash
+# Did the candidate match the reference closely enough?
+cadvm verify --files candidate.stl reference.stl \
+  --expect 'added_tris<5' --expect 'removed_tris<5'
+echo $?    # 0 = pass (gate the model output), 1 = fail
+
+cadvm geom-diff --files candidate.step reference.step --json   # raw signal
+cadvm view     --files candidate.stl  reference.stl            # 3D diff for a human
+```
+
+This makes `cadvm verify` a drop-in **geometric assertion** for any eval harness,
+RL reward, or CI job — exit code in, JSON out.
+
 ## Why it fits AI workflows
 
 - **Structured feedback** — `--json` is a reward/verification signal for agents,
@@ -108,6 +127,8 @@ The model then sees these tools:
 | `cadvm_geom_diff` | geometric diff (added/removed/common) |
 | `cadvm_verify` | assert expectations → pass/fail |
 | `cadvm_revert` | undo the last iteration |
+| `cadvm_compare_files` | geometric diff of **two files** (no repo — for evals) |
+| `cadvm_verify_files` | assert expectations on **two files** (no repo) → pass/fail |
 
 Each tool takes an optional `repo` argument (the working directory); otherwise it
 uses the server's current directory. So the loop above becomes a sequence of

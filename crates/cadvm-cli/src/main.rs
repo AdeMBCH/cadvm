@@ -21,6 +21,7 @@ use cadvm_core::revision;
 use cadvm_core::snapshot;
 use cadvm_core::status::working_tree_status;
 use cadvm_core::verify;
+use cadvm_core::CadFormat;
 use cadvm_core::Repository;
 
 mod mcp;
@@ -130,6 +131,9 @@ enum Command {
         /// signal for AI pipelines and scripts.
         #[arg(long)]
         json: bool,
+        /// Treat REV_A and REV_B as two CAD files to compare directly (no repo).
+        #[arg(long)]
+        files: bool,
         /// Restrict to these files (after `--`); default: all modified files.
         #[arg(last = true)]
         paths: Vec<PathBuf>,
@@ -149,6 +153,9 @@ enum Command {
         /// Emit the report as JSON.
         #[arg(long)]
         json: bool,
+        /// Treat REV_A and REV_B as two CAD files to compare directly (no repo).
+        #[arg(long)]
+        files: bool,
         /// File to verify (after `--`); required if several files changed.
         #[arg(last = true)]
         paths: Vec<PathBuf>,
@@ -166,6 +173,9 @@ enum Command {
         /// Open the result in the default browser.
         #[arg(long)]
         open: bool,
+        /// Treat REV_A and REV_B as two CAD files to compare directly (no repo).
+        #[arg(long)]
+        files: bool,
         /// File to view (after `--`); required if several files changed.
         #[arg(last = true)]
         paths: Vec<PathBuf>,
@@ -236,22 +246,25 @@ fn run() -> Result<()> {
             rev_a,
             rev_b,
             json,
+            files,
             paths,
-        } => cmd_geom_diff(&rev_a, &rev_b, &paths, json),
+        } => cmd_geom_diff(&rev_a, &rev_b, &paths, json, files),
         Command::Verify {
             rev_a,
             rev_b,
             expects,
             json,
+            files,
             paths,
-        } => cmd_verify(&rev_a, &rev_b, &expects, json, &paths),
+        } => cmd_verify(&rev_a, &rev_b, &expects, json, files, &paths),
         Command::View {
             rev_a,
             rev_b,
             output,
             open,
+            files,
             paths,
-        } => cmd_view(&rev_a, &rev_b, output, open, &paths),
+        } => cmd_view(&rev_a, &rev_b, output, open, files, &paths),
         Command::Ui => ui::run(open_repo()?),
         Command::Mcp => mcp::run(),
         Command::Completions { shell } => {
@@ -635,7 +648,31 @@ fn cmd_gc(dry_run: bool, prune: bool) -> Result<()> {
     Ok(())
 }
 
-fn cmd_geom_diff(rev_a: &str, rev_b: &str, paths: &[PathBuf], json: bool) -> Result<()> {
+fn cmd_geom_diff(
+    rev_a: &str,
+    rev_b: &str,
+    paths: &[PathBuf],
+    json: bool,
+    files: bool,
+) -> Result<()> {
+    // Repo-less mode: rev_a/rev_b are two files on disk.
+    if files {
+        let (a, b) = (std::path::Path::new(rev_a), std::path::Path::new(rev_b));
+        let entry = geom_diff_value_for_paths(a, b)?;
+        if json {
+            println!("{}", serde_json::to_string_pretty(&entry)?);
+        } else {
+            println!("Geometric diff {} .. {}", a.display(), b.display());
+            // Re-render the typed result for the human view.
+            if format_of(b)?.is_mesh() {
+                print_mesh_diff(&mesh_diff_paths(a, b)?);
+            } else {
+                print_geom_result(geom::diff_files(a, b)?);
+            }
+        }
+        return Ok(());
+    }
+
     let repo = open_repo()?;
     let a_id = revision::resolve(&repo, rev_a).with_context(|| format!("resolving `{rev_a}`"))?;
     let b_id = revision::resolve(&repo, rev_b).with_context(|| format!("resolving `{rev_b}`"))?;
@@ -773,21 +810,92 @@ fn metrics_for_file(
     }
 }
 
+/// Detect a file's CAD format from its extension.
+fn format_of(path: &std::path::Path) -> Result<CadFormat> {
+    CadFormat::from_path(path)
+        .with_context(|| format!("unsupported CAD format: {}", path.display()))
+}
+
+/// Geometric diff of two files **on disk** (no repository), as a serde value
+/// `{kind, diff}`. STEP/STP go through the helper; STL/OBJ are pure Rust.
+fn geom_diff_value_for_paths(
+    a: &std::path::Path,
+    b: &std::path::Path,
+) -> Result<serde_json::Value> {
+    if format_of(b)?.is_mesh() {
+        let m = mesh_diff_paths(a, b)?;
+        Ok(serde_json::json!({ "kind": "mesh", "diff": m }))
+    } else {
+        let g = geom::diff_files(a, b)?;
+        if !g.is_ok() {
+            anyhow::bail!(
+                "geometry error: {}",
+                g.error.as_deref().unwrap_or("unknown")
+            );
+        }
+        Ok(serde_json::json!({ "kind": "brep", "diff": g }))
+    }
+}
+
+/// Mesh diff of two mesh files on disk.
+fn mesh_diff_paths(a: &std::path::Path, b: &std::path::Path) -> Result<geom::MeshDiff> {
+    let ca = std::fs::read(a).with_context(|| format!("reading {}", a.display()))?;
+    let cb = std::fs::read(b).with_context(|| format!("reading {}", b.display()))?;
+    let m = meshdiff::diff(&ca, &cb, format_of(b)?);
+    if !m.is_ok() {
+        anyhow::bail!(
+            "mesh diff error: {}",
+            m.error.as_deref().unwrap_or("unknown")
+        );
+    }
+    Ok(m)
+}
+
+/// Named geometric metrics for two files on disk (no repository).
+fn metrics_for_paths(
+    a: &std::path::Path,
+    b: &std::path::Path,
+) -> Result<std::collections::BTreeMap<String, f64>> {
+    if format_of(b)?.is_mesh() {
+        Ok(verify::metrics_from_mesh(&mesh_diff_paths(a, b)?))
+    } else {
+        let g = geom::diff_files(a, b)?;
+        if !g.is_ok() {
+            anyhow::bail!(
+                "geometry error: {}",
+                g.error.as_deref().unwrap_or("unknown")
+            );
+        }
+        Ok(verify::metrics_from_geom(&g))
+    }
+}
+
 fn cmd_verify(
     rev_a: &str,
     rev_b: &str,
     expects: &[String],
     json: bool,
+    files: bool,
     paths: &[PathBuf],
 ) -> Result<()> {
-    let repo = open_repo()?;
-
     // Parse the assertions up front so a typo fails fast.
     let mut checks = Vec::with_capacity(expects.len());
     for e in expects {
         checks.push(verify::parse_check(e).map_err(|m| anyhow::anyhow!(m))?);
     }
 
+    // Repo-less mode: rev_a/rev_b are two files on disk.
+    if files {
+        let (a, b) = (std::path::Path::new(rev_a), std::path::Path::new(rev_b));
+        let report = verify::evaluate(metrics_for_paths(a, b)?, &checks);
+        emit_verify(&b.display().to_string(), rev_a, rev_b, &report, json)?;
+        if !report.pass {
+            std::process::exit(1);
+        }
+        return Ok(());
+    }
+
+    let repo = open_repo()?;
     let a_id = revision::resolve(&repo, rev_a).with_context(|| format!("resolving `{rev_a}`"))?;
     let b_id = revision::resolve(&repo, rev_b).with_context(|| format!("resolving `{rev_b}`"))?;
     let manifest_a = repo.manifest_of_commit(&a_id)?;
@@ -827,18 +935,13 @@ fn cmd_verify(
 
     let metrics = metrics_for_file(&repo, entry_a, entry_b)?;
     let report = verify::evaluate(metrics, &checks);
-
-    if json {
-        let out = serde_json::json!({
-            "file": file,
-            "rev_a": a_id.short(),
-            "rev_b": b_id.short(),
-            "report": report,
-        });
-        println!("{}", serde_json::to_string_pretty(&out)?);
-    } else {
-        print_verify(&file, &a_id, &b_id, &report);
-    }
+    emit_verify(
+        &file.display().to_string(),
+        a_id.short(),
+        b_id.short(),
+        &report,
+        json,
+    )?;
 
     if !report.pass {
         std::process::exit(1);
@@ -846,13 +949,25 @@ fn cmd_verify(
     Ok(())
 }
 
-fn print_verify(
-    file: &std::path::Path,
-    a: &cadvm_core::ObjectId,
-    b: &cadvm_core::ObjectId,
-    r: &verify::VerifyReport,
-) {
-    println!("Verify {}  ({}..{})", file.display(), a.short(), b.short());
+/// Print a verify report as JSON or human text.
+fn emit_verify(
+    file: &str,
+    a: &str,
+    b: &str,
+    report: &verify::VerifyReport,
+    json: bool,
+) -> Result<()> {
+    if json {
+        let out = serde_json::json!({ "file": file, "rev_a": a, "rev_b": b, "report": report });
+        println!("{}", serde_json::to_string_pretty(&out)?);
+    } else {
+        print_verify(file, a, b, report);
+    }
+    Ok(())
+}
+
+fn print_verify(file: &str, a: &str, b: &str, r: &verify::VerifyReport) {
+    println!("Verify {file}  ({a}..{b})");
     if r.checks.is_empty() {
         println!("  (no expectations given — metrics only)");
         for (k, v) in &r.metrics {
@@ -881,68 +996,98 @@ fn print_verify(
     }
 }
 
+/// Tessellated mesh diff of two files on disk (for the viewer, no repository).
+fn mesh_view_for_paths(a: &std::path::Path, b: &std::path::Path) -> Result<geom::MeshDiff> {
+    if format_of(b)?.is_mesh() {
+        mesh_diff_paths(a, b)
+    } else {
+        let out = std::env::temp_dir().join(format!("cadvm-view-{}.json", std::process::id()));
+        let result = geom::mesh_files(a, b, &out);
+        let _ = std::fs::remove_file(&out);
+        let m = result?;
+        if !m.is_ok() {
+            anyhow::bail!(
+                "geometry error: {}",
+                m.error.as_deref().unwrap_or("unknown")
+            );
+        }
+        Ok(m)
+    }
+}
+
 fn cmd_view(
     rev_a: &str,
     rev_b: &str,
     output: Option<PathBuf>,
     open: bool,
+    files: bool,
     paths: &[PathBuf],
 ) -> Result<()> {
-    let repo = open_repo()?;
-    let a_id = revision::resolve(&repo, rev_a).with_context(|| format!("resolving `{rev_a}`"))?;
-    let b_id = revision::resolve(&repo, rev_b).with_context(|| format!("resolving `{rev_b}`"))?;
-    let manifest_a = repo.manifest_of_commit(&a_id)?;
-    let manifest_b = repo.manifest_of_commit(&b_id)?;
-
-    // Pick the single file to view.
-    let modified: Vec<PathBuf> = diff::diff_manifests(&manifest_a, &manifest_b)
-        .modified
-        .into_iter()
-        .map(|f| f.path)
-        .collect();
-    let file = match paths {
-        [] => match modified.as_slice() {
-            [one] => one.clone(),
-            [] => anyhow::bail!("no modified STEP files between {rev_a} and {rev_b}"),
-            many => {
-                let list = many
-                    .iter()
-                    .map(|p| format!("  {}", p.display()))
-                    .collect::<Vec<_>>()
-                    .join("\n");
-                anyhow::bail!("several files changed; pick one with `-- <file>`:\n{list}");
-            }
-        },
-        [one] => one.clone(),
-        _ => anyhow::bail!("the 3D viewer handles one file at a time"),
-    };
-
-    let entry_a = manifest_a
-        .files
-        .get(&file)
-        .with_context(|| format!("`{}` not present in {rev_a}", file.display()))?;
-    let entry_b = manifest_b
-        .files
-        .get(&file)
-        .with_context(|| format!("`{}` not present in {rev_b}", file.display()))?;
-
-    // Mesh formats (STL/OBJ) diff in pure Rust (no Open CASCADE); B-Rep formats
-    // (STEP/STP) go through the cadvm-geom helper.
-    let mesh = if entry_b.format.is_mesh() {
-        let content_a = repo.store().read_file_content(&entry_a.blob_ref)?;
-        let content_b = repo.store().read_file_content(&entry_b.blob_ref)?;
-        meshdiff::diff(&content_a, &content_b, entry_b.format)
+    let (mesh, title) = if files {
+        let (a, b) = (std::path::Path::new(rev_a), std::path::Path::new(rev_b));
+        let title = format!("{} .. {}", a.display(), b.display());
+        (mesh_view_for_paths(a, b)?, title)
     } else {
-        let tmp = repo.tmp_dir();
-        let path_a = extract_version(&repo, &tmp, entry_a, "view-a")?;
-        let path_b = extract_version(&repo, &tmp, entry_b, "view-b")?;
-        let out_json = tmp.join("view-mesh.json");
-        let result = geom::mesh_files(&path_a, &path_b, &out_json);
-        let _ = std::fs::remove_file(&path_a);
-        let _ = std::fs::remove_file(&path_b);
-        let _ = std::fs::remove_file(&out_json);
-        result?
+        let repo = open_repo()?;
+        let a_id =
+            revision::resolve(&repo, rev_a).with_context(|| format!("resolving `{rev_a}`"))?;
+        let b_id =
+            revision::resolve(&repo, rev_b).with_context(|| format!("resolving `{rev_b}`"))?;
+        let manifest_a = repo.manifest_of_commit(&a_id)?;
+        let manifest_b = repo.manifest_of_commit(&b_id)?;
+
+        // Pick the single file to view.
+        let modified: Vec<PathBuf> = diff::diff_manifests(&manifest_a, &manifest_b)
+            .modified
+            .into_iter()
+            .map(|f| f.path)
+            .collect();
+        let file = match paths {
+            [] => match modified.as_slice() {
+                [one] => one.clone(),
+                [] => anyhow::bail!("no modified files between {rev_a} and {rev_b}"),
+                many => {
+                    let list = many
+                        .iter()
+                        .map(|p| format!("  {}", p.display()))
+                        .collect::<Vec<_>>()
+                        .join("\n");
+                    anyhow::bail!("several files changed; pick one with `-- <file>`:\n{list}");
+                }
+            },
+            [one] => one.clone(),
+            _ => anyhow::bail!("the 3D viewer handles one file at a time"),
+        };
+
+        let entry_a = manifest_a
+            .files
+            .get(&file)
+            .with_context(|| format!("`{}` not present in {rev_a}", file.display()))?;
+        let entry_b = manifest_b
+            .files
+            .get(&file)
+            .with_context(|| format!("`{}` not present in {rev_b}", file.display()))?;
+
+        // Mesh formats (STL/OBJ) diff in pure Rust; B-Rep go through cadvm-geom.
+        let mesh = if entry_b.format.is_mesh() {
+            let content_a = repo.store().read_file_content(&entry_a.blob_ref)?;
+            let content_b = repo.store().read_file_content(&entry_b.blob_ref)?;
+            meshdiff::diff(&content_a, &content_b, entry_b.format)
+        } else {
+            let tmp = repo.tmp_dir();
+            let path_a = extract_version(&repo, &tmp, entry_a, "view-a")?;
+            let path_b = extract_version(&repo, &tmp, entry_b, "view-b")?;
+            let out_json = tmp.join("view-mesh.json");
+            let result = geom::mesh_files(&path_a, &path_b, &out_json);
+            let _ = std::fs::remove_file(&path_a);
+            let _ = std::fs::remove_file(&path_b);
+            let _ = std::fs::remove_file(&out_json);
+            result?
+        };
+        let title = format!("{}  ({}..{})", file.display(), a_id.short(), b_id.short());
+        (mesh, title)
     };
+
     if !mesh.is_ok() {
         anyhow::bail!(
             "geometry error: {}",
@@ -950,9 +1095,7 @@ fn cmd_view(
         );
     }
 
-    let mesh_json = mesh.to_json();
-    let title = format!("{}  ({}..{})", file.display(), a_id.short(), b_id.short());
-    let html = viewer::render(&title, &mesh_json);
+    let html = viewer::render(&title, &mesh.to_json());
 
     let out_path = output.unwrap_or_else(|| PathBuf::from("cadvm-view.html"));
     std::fs::write(&out_path, html).with_context(|| format!("writing {}", out_path.display()))?;

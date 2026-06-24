@@ -101,6 +101,29 @@ fn snapshot_outside_repo_fails() {
 }
 
 #[test]
+fn verify_files_gates_with_exit_code() {
+    // Repo-less geometric gate on two files (the eval/CI use case). STL → pure
+    // Rust, so no Open CASCADE needed.
+    let root = env!("CARGO_MANIFEST_DIR");
+    let a = format!("{root}/../../tests/fixtures/block_v1.stl");
+    let b = format!("{root}/../../tests/fixtures/block_v2.stl");
+
+    // Passing assertion → exit 0.
+    Command::cargo_bin("cadvm")
+        .unwrap()
+        .args(["verify", "--files", &a, &b, "--expect", "added_tris>0"])
+        .assert()
+        .success();
+
+    // Failing assertion → non-zero exit (the gate rejects).
+    Command::cargo_bin("cadvm")
+        .unwrap()
+        .args(["verify", "--files", &a, &b, "--expect", "removed_tris<1"])
+        .assert()
+        .failure();
+}
+
+#[test]
 fn mcp_handshake_and_tools_list() {
     let tmp = tempfile::tempdir().unwrap();
     // initialize + tools/list do not touch a repository.

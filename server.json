@@ -1,0 +1,29 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.AdeMBCH/cadvm",
+  "title": "cadvm",
+  "description": "Version, diff and verify CAD (STEP/STP/STL/OBJ) — built for AI-generated CAD.",
+  "websiteUrl": "https://adembch.github.io/cadvm/",
+  "repository": {
+    "url": "https://github.com/AdeMBCH/cadvm",
+    "source": "github"
+  },
+  "version": "0.1.1",
+  "packages": [
+    {
+      "registryType": "cargo",
+      "registryBaseUrl": "https://crates.io",
+      "identifier": "cadvm",
+      "version": "0.1.1",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp"
+        }
+      ]
+    }
+  ]
+}

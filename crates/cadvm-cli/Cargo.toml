@@ -1,11 +1,12 @@
 [package]
-name = "cadvm-cli"
+name = "cadvm"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
 repository.workspace = true
-description = "Command-line interface for cadvm, the CAD Version Manager."
+readme = "README.md"
+description = "CAD Version Manager: version, diff, verify and an MCP server for STEP/STP/STL/OBJ — built for AI-generated CAD."
 
 [[bin]]
 name = "cadvm"

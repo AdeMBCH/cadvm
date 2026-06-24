@@ -45,10 +45,11 @@ It downloads the matching prebuilt binary from the
 `~/.local/bin` (override with `CADVM_INSTALL_DIR`). Windows users download
 `cadvm-x86_64-pc-windows-msvc.exe` from the release page.
 
-*Or build from source* (needs a recent stable Rust toolchain):
+*With Cargo* (needs a recent stable Rust toolchain):
 
 ```bash
-cargo install --path crates/cadvm-cli      # installs `cadvm` into ~/.cargo/bin
+cargo install cadvm                         # from crates.io (once published)
+cargo install --path crates/cadvm-cli       # or from a clone
 ```
 
 **2. Geometry features** (`cadvm geom-diff`, `cadvm view`) additionally need

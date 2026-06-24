@@ -27,4 +27,5 @@
 # Contributing
 
 - [Developing](developing.md)
+- [Publishing to the MCP Registry](mcp-publishing.md)
 - [License](license.md)

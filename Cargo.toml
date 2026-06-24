@@ -26,6 +26,7 @@ chrono = { version = "0.4", features = ["serde"] }
 tempfile = "3"
 fs_extra = "1"
 
-# Internal crates
-cadvm-core = { path = "crates/cadvm-core" }
-cadvm-store = { path = "crates/cadvm-store" }
+# Internal crates (path for local builds, version so they resolve from crates.io
+# once published).
+cadvm-core = { path = "crates/cadvm-core", version = "0.1.1" }
+cadvm-store = { path = "crates/cadvm-store", version = "0.1.1" }
